@@ -1,26 +1,161 @@
-@import "tailwindcss";
+/* Fonts are loaded via <link> tags in app/layout.tsx for reliable registration. */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  html,
+  body {
+    margin: 0;
+    padding: 0;
+  }
+  body {
+    overscroll-behavior: none;
+  }
+  main > :first-child {
+    margin-top: 0 !important;
+  }
+  main > :last-child {
+    margin-bottom: 0 !important;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Hide scrollbars to match the reference chrome, keep scroll working */
+::-webkit-scrollbar {
+  display: none;
+}
+* {
+  scrollbar-width: none;
+}
+
+.material-symbols-outlined {
+  font-family: "Material Symbols Outlined";
+  font-weight: normal;
+  font-style: normal;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-feature-settings: "liga";
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+}
+
+/* ---- Accessibility toolbar modes ---- */
+/* High-contrast: invert the palette but keep photos/QRs visually correct */
+html.a11y-contrast {
+  filter: invert(1) hue-rotate(180deg);
+  background: #fff;
+}
+html.a11y-contrast img,
+html.a11y-contrast svg,
+html.a11y-contrast video,
+html.a11y-contrast [data-no-invert] {
+  filter: invert(1) hue-rotate(180deg);
+}
+/* Readable/dyslexia-friendly font + generous spacing */
+html.a11y-readable body {
+  font-family: Verdana, Tahoma, "Trebuchet MS", sans-serif !important;
+  letter-spacing: 0.03em;
+  word-spacing: 0.12em;
+  line-height: 1.7;
+}
+
+/* Scroll reveal */
+.reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1), transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform;
+}
+.reveal.in-view {
+  opacity: 1;
+  transform: none;
+}
+
+/* Hero: slow Ken Burns zoom on the active photo */
+@keyframes kenburns {
+  from { transform: scale(1.02); }
+  to { transform: scale(1.1); }
+}
+.hero-zoom {
+  animation: kenburns 7s ease-out both;
+}
+
+/* Hero: autoplay progress bar */
+@keyframes heroProgress {
+  from { width: 0%; }
+  to { width: 100%; }
+}
+.hero-progress {
+  animation: heroProgress linear both;
+}
+
+/* Console screens: entrance on mount / navigation */
+@keyframes screenEnter {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: none; }
+}
+.screen-enter {
+  animation: screenEnter 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+/* Gentle stagger for the immediate blocks within a screen */
+.screen-enter > * > * {
+  animation: screenEnter 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.screen-enter > * > *:nth-child(1) { animation-delay: 0.02s; }
+.screen-enter > * > *:nth-child(2) { animation-delay: 0.08s; }
+.screen-enter > * > *:nth-child(3) { animation-delay: 0.14s; }
+.screen-enter > * > *:nth-child(4) { animation-delay: 0.2s; }
+.screen-enter > * > *:nth-child(n + 5) { animation-delay: 0.24s; }
+
+/* Respect reduced motion for carousels/animations */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+  .reveal {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  .hero-zoom {
+    animation: none !important;
+  }
+  .screen-enter,
+  .screen-enter > * > * {
+    animation: none !important;
+  }
+}
+
+/* Clear keyboard focus ring for government accessibility */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 3px solid #F59E0B;
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* thin custom scrollbar for the app sidebar (opt-in) */
+.app-scroll {
+  scrollbar-width: thin;
+}
+.app-scroll::-webkit-scrollbar {
+  display: block;
+  width: 6px;
+  height: 6px;
+}
+.app-scroll::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
 }
