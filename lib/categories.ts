@@ -64,7 +64,7 @@ export const CATEGORIES: Category[] = [
     icon: "label",
     items: [
       { en: "Labels and certificates", hi: "लेबल एवं प्रमाणपत्र", href: "/app/model-label/label-preview", icon: "verified_user" },
-      { en: "QR batches", hi: "QR बैच", href: "/app/qr-verification/qr-batch-status", icon: "qr_code_2" },
+      { en: "QR batches", hi: "QR बैच", href: "/app/qr/batch", icon: "qr_code_2" },
       { en: "Production submissions", hi: "उत्पादन प्रस्तुति", href: "/app/production/quarterly-submission", icon: "factory" },
       { en: "Bulk uploads", hi: "बल्क अपलोड", href: "/app/production/bulk-upload", icon: "upload_file" },
       { en: "Validation and reconciliation", hi: "सत्यापन एवं समाधान", href: "/app/production/reconciliation", icon: "rule" },
