@@ -4,17 +4,18 @@ import Link from "next/link";
 import { Icon } from "@/components/ui/Icon";
 import { useRole } from "@/components/app/RoleContext";
 import { useLang } from "@/components/i18n/LangProvider";
-import { modulesForRole, countForRole, SCREEN_COUNT } from "@/lib/screens";
+import { countForRole, SCREEN_COUNT } from "@/lib/screens";
+import { categoriesForRole } from "@/lib/categories";
 
 export default function AppOverview() {
   const { role } = useRole();
-  const { t } = useLang();
-  const modules = modulesForRole(role);
+  const { t, lang } = useLang();
+  const categories = categoriesForRole(role);
   const visible = countForRole(role);
   const summary = t("app.accessSummary")
     .replace("{visible}", String(visible))
     .replace("{total}", String(SCREEN_COUNT))
-    .replace("{modules}", String(modules.length));
+    .replace("{modules}", String(categories.length));
 
   return (
     <div className="p-space-md lg:p-space-lg space-y-space-lg">
@@ -27,8 +28,8 @@ export default function AppOverview() {
         </div>
         <div className="flex items-center gap-space-md">
           <div className="text-center">
-            <div className="font-display-lg text-display-lg font-bold text-solar-gold leading-none">{visible}</div>
-            <div className="font-label-sm text-label-sm text-forest-light/80">{t("app.screensForYou")}</div>
+            <div className="font-display-lg text-display-lg font-bold text-solar-gold leading-none">{categories.length}</div>
+            <div className="font-label-sm text-label-sm text-forest-light/80">{t("app.workAreas")}</div>
           </div>
         </div>
       </div>
@@ -51,33 +52,27 @@ export default function AppOverview() {
         ))}
       </div>
 
-      {/* Modules grid */}
+      {/* Category grid */}
       <div>
-        <h2 className="font-headline-sm text-headline-sm text-on-surface mb-space-md">{t("app.modules")}</h2>
+        <h2 className="font-headline-sm text-headline-sm text-on-surface mb-space-md">{t("app.workAreasTitle")}</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-space-md">
-          {modules.map((m) => (
-            <div key={m.id} className="bg-surface-card rounded-xl shadow-sm p-space-md hover:shadow-md transition-all">
+          {categories.map((c) => (
+            <div key={c.id} className="bg-surface-card rounded-xl shadow-sm p-space-md hover:shadow-md transition-all">
               <div className="flex items-center gap-space-sm mb-space-sm">
                 <span className="w-10 h-10 rounded-lg bg-forest-light text-primary flex items-center justify-center">
-                  <Icon name={m.icon} size={22} fill />
+                  <Icon name={c.icon} size={22} fill />
                 </span>
                 <div>
-                  <h3 className="font-title-lg text-title-lg text-on-surface">{t(`module.${m.id}`)}</h3>
-                  <span className="font-label-sm text-label-sm text-on-surface-variant">{m.screens.length} {t("app.screensWord")}</span>
+                  <h3 className="font-title-lg text-title-lg text-on-surface">{lang === "hi" ? c.hi : c.en}</h3>
+                  <span className="font-label-sm text-label-sm text-on-surface-variant">{c.items.length} {t("app.areasWord")}</span>
                 </div>
               </div>
-              <p className="font-body-sm text-body-sm text-on-surface-variant mb-space-sm">{m.blurb}</p>
               <div className="flex flex-wrap gap-1">
-                {m.screens.slice(0, 3).map((s) => (
-                  <Link key={s.id} href={`/app/${m.id}/${s.id}`} className="px-2 py-0.5 rounded-full bg-surface-container text-on-surface font-label-sm text-label-sm hover:bg-forest-light hover:text-forest-dark">
-                    {s.name}
+                {c.items.map((it) => (
+                  <Link key={it.href + it.en} href={it.href} className="px-2 py-0.5 rounded-full bg-surface-container text-on-surface font-label-sm text-label-sm hover:bg-forest-light hover:text-forest-dark">
+                    {lang === "hi" ? it.hi : it.en}
                   </Link>
                 ))}
-                {m.screens.length > 3 && (
-                  <Link href={`/app/${m.id}/${m.screens[0].id}`} className="px-2 py-0.5 rounded-full bg-surface-container-low text-on-surface-variant font-label-sm text-label-sm">
-                    +{m.screens.length - 3} {t("app.more")}
-                  </Link>
-                )}
               </div>
             </div>
           ))}
