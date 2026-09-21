@@ -121,7 +121,7 @@ export const CATEGORIES: Category[] = [
       { en: "Operational dashboards", hi: "परिचालन डैशबोर्ड", href: "/app/mis-ai/registration-dashboard", icon: "dashboard" },
       { en: "Report builder", hi: "रिपोर्ट बिल्डर", href: "/app/mis-ai/report-builder", icon: "build" },
       { en: "Scheduled reports", hi: "अनुसूचित रिपोर्ट", href: "/app/mis-ai/scheduled-reports", icon: "schedule" },
-      { en: "AI Insights", hi: "एआई अंतर्दृष्टि", href: "/app/mis-ai/risk-scoring", icon: "auto_awesome" },
+      { en: "AI Insights", hi: "एआई अंतर्दृष्टि", href: "/app/ai", icon: "auto_awesome" },
       { en: "Data quality", hi: "डेटा गुणवत्ता", href: "/app/mis-ai/data-quality", icon: "verified" },
       { en: "AI model governance", hi: "एआई मॉडल गवर्नेंस", href: "/app/mis-ai/model-monitoring", icon: "shield" },
     ],

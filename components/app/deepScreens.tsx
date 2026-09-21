@@ -15,6 +15,14 @@ import {
   QRDownload,
   VerificationScreen,
 } from "./lifecycle/QRScreens";
+import {
+  ComplianceRiskScoring,
+  ProductionAnomalyDetection,
+  DocumentIntelligence,
+  HelpdeskAssistant,
+  StarRatingTrends,
+  AIModelGovernance,
+} from "./ai/AIScreens";
 
 type DeepComponent = (props: { module: Module; screen: Screen }) => React.ReactNode;
 
@@ -61,6 +69,14 @@ export const DEEP_SCREENS: Record<string, DeepComponent> = {
   "workflow/application-review": ApplicationReview,
   "workflow/escalation-dashboard": EscalationDashboard,
   "workflow/workflow-history": WorkflowHistory,
+
+  // MIS & AI — the five committed use cases + governance, each bespoke
+  "mis-ai/risk-scoring": ComplianceRiskScoring,
+  "mis-ai/production-anomaly": ProductionAnomalyDetection,
+  "mis-ai/extraction-review": DocumentIntelligence,
+  "mis-ai/chatbot-review": HelpdeskAssistant,
+  "mis-ai/rating-trends": StarRatingTrends,
+  "mis-ai/model-monitoring": AIModelGovernance,
 };
 
 export function getDeepScreen(moduleId: string, screenId: string): DeepComponent | undefined {
