@@ -49,9 +49,9 @@ export const CATEGORIES: Category[] = [
     icon: "how_to_reg",
     items: [
       { en: "Organisations and users", hi: "संगठन एवं उपयोगकर्ता", href: "/app/identity/organisation-users", icon: "groups" },
-      { en: "Agency registrations", hi: "एजेंसी पंजीकरण", href: "/app/agency-brand/agency-registration", icon: "domain" },
-      { en: "Brands", hi: "ब्रांड", href: "/app/agency-brand/brand-registration", icon: "sell" },
-      { en: "Model applications", hi: "मॉडल आवेदन", href: "/app/model-label/new-model-application", icon: "note_add" },
+      { en: "Agency registrations", hi: "एजेंसी पंजीकरण", href: "/app/registrations/record", icon: "domain" },
+      { en: "Brands", hi: "ब्रांड", href: "/app/registrations/record", icon: "sell" },
+      { en: "Model applications", hi: "मॉडल आवेदन", href: "/app/registrations/record", icon: "note_add" },
       { en: "Approved models", hi: "अनुमोदित मॉडल", href: "/app/model-label/model-dashboard", icon: "verified" },
       { en: "Renewals and changes", hi: "नवीनीकरण एवं परिवर्तन", href: "/app/model-label/renewal-or-degradation", icon: "autorenew" },
       { en: "Withdrawals", hi: "वापसी", href: "/app/withdrawal/brand-withdrawal", icon: "cancel" },
