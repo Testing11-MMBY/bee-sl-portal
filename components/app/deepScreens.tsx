@@ -23,6 +23,7 @@ import {
   StarRatingTrends,
   AIModelGovernance,
 } from "./ai/AIScreens";
+import { FabricMonitoring } from "./blockchain/FabricMonitoring";
 
 type DeepComponent = (props: { module: Module; screen: Screen }) => React.ReactNode;
 
@@ -77,6 +78,9 @@ export const DEEP_SCREENS: Record<string, DeepComponent> = {
   "mis-ai/chatbot-review": HelpdeskAssistant,
   "mis-ai/rating-trends": StarRatingTrends,
   "mis-ai/model-monitoring": AIModelGovernance,
+
+  // Blockchain / integration monitoring
+  "audit/integration-correlation": FabricMonitoring,
 };
 
 export function getDeepScreen(moduleId: string, screenId: string): DeepComponent | undefined {
