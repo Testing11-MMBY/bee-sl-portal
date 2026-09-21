@@ -106,7 +106,7 @@ export const CATEGORIES: Category[] = [
     icon: "support_agent",
     items: [
       { en: "Raise / track ticket", hi: "टिकट दर्ज / ट्रैक", href: "/app/helpdesk/raise-ticket", icon: "confirmation_number" },
-      { en: "Agent workspace", hi: "एजेंट कार्यक्षेत्र", href: "/app/helpdesk/agent-queue", icon: "headset_mic" },
+      { en: "Agent workspace", hi: "एजेंट कार्यक्षेत्र", href: "/app/helpdesk/workspace", icon: "headset_mic" },
       { en: "Knowledge base", hi: "ज्ञान आधार", href: "/app/helpdesk/knowledge-base", icon: "menu_book" },
       { en: "SLA dashboard", hi: "एसएलए डैशबोर्ड", href: "/app/helpdesk/sla-dashboard", icon: "speed" },
     ],
