@@ -79,7 +79,7 @@ export const CATEGORIES: Category[] = [
     items: [
       { en: "Enforcement dashboard", hi: "प्रवर्तन डैशबोर्ड", href: "/app/mis-ai/enforcement-dashboard", icon: "monitoring" },
       { en: "Sampling plans", hi: "नमूना योजनाएँ", href: "/app/enforcement/sample-plan", icon: "science" },
-      { en: "Enforcement cases", hi: "प्रवर्तन प्रकरण", href: "/app/enforcement/result-scrutiny", icon: "folder_special" },
+      { en: "Enforcement cases", hi: "प्रवर्तन प्रकरण", href: "/app/enforcement/case", icon: "folder_special" },
       { en: "Laboratory testing", hi: "प्रयोगशाला परीक्षण", href: "/app/enforcement/laboratory-assignment", icon: "biotech" },
       { en: "Challenge testing", hi: "चुनौती परीक्षण", href: "/app/enforcement/challenge-test", icon: "fact_check" },
       { en: "Show-cause and penalties", hi: "कारण बताओ एवं दंड", href: "/app/enforcement/show-cause", icon: "gavel" },
