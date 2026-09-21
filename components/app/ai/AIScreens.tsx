@@ -6,6 +6,19 @@ import { Icon } from "@/components/ui/Icon";
 import { Stars } from "@/components/ui/Stars";
 import { Module, Screen } from "@/lib/screens";
 import { Card, ScreenChrome, Status, OK, WARN, BAD } from "@/components/app/ScreenScaffold";
+import { ADVISORY_TEXT } from "@/lib/mock/certificate";
+import { useRole } from "@/components/app/RoleContext";
+import { roleByKey } from "@/lib/roles";
+
+/** The mandatory advisory-only disclaimer shown on every AI screen. */
+export function AIDisclaimer() {
+  return (
+    <div className="flex items-start gap-space-sm bg-solar-gold-light/50 border border-solar-gold/40 rounded-xl p-space-sm" role="note">
+      <Icon name="gavel" size={18} className="text-solar-gold-dark shrink-0 mt-0.5" />
+      <p className="font-body-sm text-body-sm text-on-surface"><span className="font-semibold">Advisory decision support.</span> {ADVISORY_TEXT.replace("AI output is advisory decision support. ", "")}</p>
+    </div>
+  );
+}
 
 /* ================================================================== *
  * Shared AI primitives & mock data (Phase 2 — the five committed AI
@@ -113,44 +126,88 @@ function riskBand(score: number) {
   return { label: "Low", tone: OK };
 }
 
+function MiniKV({ k, v }: { k: string; v: string }) {
+  return (
+    <div>
+      <div className="font-label-sm text-label-sm text-on-surface-variant">{k}</div>
+      <div className="font-label-md text-label-md text-on-surface font-semibold">{v}</div>
+    </div>
+  );
+}
+
 /* ================================================================== *
  * 1) COMPLIANCE RISK SCORING — ranks ENTITIES for enforcement.
  * ================================================================== */
 
+interface RiskFactor { label: string; observed: string; direction: "up" | "down"; contribution: number; evidence: string; }
 interface RiskEntity {
-  id: string; name: string; kind: "Manufacturer" | "Model"; score: number;
-  factors: { label: string; weight: number }[];
+  id: string; name: string; kind: "Manufacturer" | "Model"; score: number; percentile: number; lastScored: string;
+  factors: RiskFactor[];
   priorEnforcement: number; submissionDelays: number; qrAnomalies: number;
 }
 
 const RISK_ENTITIES: RiskEntity[] = [
-  { id: "MFR-2231", name: "Nova Cool Appliances Ltd.", kind: "Manufacturer", score: 82,
-    factors: [{ label: "QR verification anomalies", weight: 34 }, { label: "Repeated submission delays", weight: 26 }, { label: "Prior enforcement history", weight: 22 }, { label: "Production vs label mismatch", weight: 18 }],
-    priorEnforcement: 2, submissionDelays: 5, qrAnomalies: 41 },
-  { id: "MDL-10233", name: "FrostMax 1.5T (5★)", kind: "Model", score: 74,
-    factors: [{ label: "Cross-model IESER outlier", weight: 30 }, { label: "QR verification anomalies", weight: 28 }, { label: "Production spike", weight: 22 }, { label: "Late quarterly filing", weight: 20 }],
-    priorEnforcement: 1, submissionDelays: 3, qrAnomalies: 27 },
-  { id: "MFR-1188", name: "Sunrise Electra Pvt. Ltd.", kind: "Manufacturer", score: 58,
-    factors: [{ label: "Submission delays", weight: 40 }, { label: "Document mismatch rate", weight: 32 }, { label: "QR anomalies", weight: 28 }],
-    priorEnforcement: 0, submissionDelays: 4, qrAnomalies: 12 },
-  { id: "MDL-10871", name: "AquaBreeze 2T (3★)", kind: "Model", score: 37,
-    factors: [{ label: "Minor label variance", weight: 55 }, { label: "One late filing", weight: 45 }],
-    priorEnforcement: 0, submissionDelays: 1, qrAnomalies: 3 },
-  { id: "MFR-3012", name: "GreenVolt Industries", kind: "Manufacturer", score: 24,
-    factors: [{ label: "Isolated QR mismatch", weight: 60 }, { label: "Data completeness", weight: 40 }],
-    priorEnforcement: 0, submissionDelays: 0, qrAnomalies: 2 },
+  { id: "MFR-2231", name: "Nova Cool Appliances Ltd.", kind: "Manufacturer", score: 82, percentile: 98, lastScored: "Today 06:15 IST",
+    factors: [
+      { label: "QR verification anomalies", observed: "41 in 90 days", direction: "up", contribution: 28, evidence: "View events" },
+      { label: "Delayed submissions", observed: "5 quarters", direction: "up", contribution: 21, evidence: "View submissions" },
+      { label: "Prior enforcement", observed: "2 confirmed cases", direction: "up", contribution: 18, evidence: "View cases" },
+      { label: "Production mismatch", observed: "17.4% variance", direction: "up", contribution: 15, evidence: "View comparison" },
+    ], priorEnforcement: 2, submissionDelays: 5, qrAnomalies: 41 },
+  { id: "MDL-10233", name: "FrostMax 1.5T (5★)", kind: "Model", score: 74, percentile: 94, lastScored: "Today 06:15 IST",
+    factors: [
+      { label: "Cross-model ISEER outlier", observed: "2.1σ from peers", direction: "up", contribution: 30, evidence: "View comparison" },
+      { label: "QR verification anomalies", observed: "27 in 90 days", direction: "up", contribution: 28, evidence: "View events" },
+      { label: "Production spike", observed: "+286% QoQ", direction: "up", contribution: 22, evidence: "View submissions" },
+      { label: "Late quarterly filing", observed: "3 quarters", direction: "up", contribution: 20, evidence: "View submissions" },
+    ], priorEnforcement: 1, submissionDelays: 3, qrAnomalies: 27 },
+  { id: "MFR-1188", name: "Sunrise Electra Pvt. Ltd.", kind: "Manufacturer", score: 58, percentile: 81, lastScored: "Today 06:15 IST",
+    factors: [
+      { label: "Delayed submissions", observed: "4 quarters", direction: "up", contribution: 40, evidence: "View submissions" },
+      { label: "Document mismatch rate", observed: "9.2%", direction: "up", contribution: 32, evidence: "View comparison" },
+      { label: "QR anomalies", observed: "12 in 90 days", direction: "up", contribution: 28, evidence: "View events" },
+    ], priorEnforcement: 0, submissionDelays: 4, qrAnomalies: 12 },
+  { id: "MDL-10871", name: "AquaBreeze 2T (3★)", kind: "Model", score: 37, percentile: 62, lastScored: "Today 06:15 IST",
+    factors: [
+      { label: "Minor label variance", observed: "1.1% variance", direction: "up", contribution: 55, evidence: "View comparison" },
+      { label: "One late filing", observed: "1 quarter", direction: "up", contribution: 45, evidence: "View submissions" },
+    ], priorEnforcement: 0, submissionDelays: 1, qrAnomalies: 3 },
+  { id: "MFR-3012", name: "GreenVolt Industries", kind: "Manufacturer", score: 24, percentile: 40, lastScored: "Today 06:15 IST",
+    factors: [
+      { label: "Isolated QR mismatch", observed: "2 in 90 days", direction: "up", contribution: 60, evidence: "View events" },
+      { label: "Data completeness", observed: "99.1%", direction: "down", contribution: 40, evidence: "View submissions" },
+    ], priorEnforcement: 0, submissionDelays: 0, qrAnomalies: 2 },
 ];
 
+interface RecordedDisposition { officer: string; role: string; timestamp: string; decision: string; comments: string; auditRef: string; }
+const DECISION_LABEL: Record<string, string> = {
+  assess: "Open enforcement assessment (draft case)", monitor: "Keep under monitoring", dismiss: "Dismiss — false positive",
+};
+
 export function ComplianceRiskScoring({ module, screen }: { module: Module; screen: Screen }) {
+  const { role } = useRole();
+  const officer = roleByKey(role);
   const [selId, setSelId] = useState(RISK_ENTITIES[0].id);
   const [disposition, setDisposition] = useState("monitor");
   const [note, setNote] = useState("");
+  const [recorded, setRecorded] = useState<RecordedDisposition | null>(null);
   const sel = RISK_ENTITIES.find((e) => e.id === selId)!;
   const band = riskBand(sel.score);
 
+  function select(id: string) { setSelId(id); setRecorded(null); setNote(""); setDisposition("monitor"); }
+  function record() {
+    if (!note.trim()) return;
+    setRecorded({
+      officer: officer.name, role: officer.short, timestamp: new Date().toLocaleString("en-IN"),
+      decision: DECISION_LABEL[disposition], comments: note.trim(),
+      auditRef: `AUD-RISK-${sel.id}-${Math.floor(Math.random() * 9000 + 1000)}`,
+    });
+  }
+
   return (
     <ScreenChrome module={module} screen={screen} subtitle="Risk ranking of entities · model risk-rank v2.3">
-      <AdvisoryBanner text="Risk scores are advisory decision-support only. They rank entities for officer attention and do NOT initiate enforcement automatically — every action needs an officer disposition." />
+      <AIDisclaimer />
+      <AdvisoryBanner text="Scores rank entities for officer attention only. Opening an enforcement assessment creates a DRAFT case — it never initiates enforcement automatically." />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-space-md">
         {[
@@ -175,7 +232,7 @@ export function ComplianceRiskScoring({ module, screen }: { module: Module; scre
                 const b = riskBand(e.score);
                 const active = e.id === selId;
                 return (
-                  <button key={e.id} type="button" onClick={() => setSelId(e.id)}
+                  <button key={e.id} type="button" onClick={() => select(e.id)}
                     className={`w-full flex items-center gap-space-sm p-space-sm rounded-lg text-left transition-colors ${active ? "bg-primary-container/40 ring-1 ring-primary" : "bg-surface-container-low hover:bg-surface-container"}`}>
                     <span className="font-headline-sm text-headline-sm font-bold text-on-surface-variant w-6 text-center">{i + 1}</span>
                     <div className="flex-1 min-w-0">
@@ -196,43 +253,80 @@ export function ComplianceRiskScoring({ module, screen }: { module: Module; scre
         {/* Selected assessment */}
         <div className="lg:col-span-2 space-y-space-md">
           <Card title={sel.name} action={<Status label={`${band.label} · ${sel.score}`} tone={band.tone} />}>
-            <div className="font-label-sm text-label-sm text-on-surface-variant mb-space-sm">{sel.kind} · {sel.id} · model risk-rank v2.3</div>
-            <div className="space-y-space-sm">
-              <div className="font-label-md text-label-md text-on-surface font-semibold">Contributing factors</div>
-              {sel.factors.map((f) => <Bar key={f.label} label={f.label} value={f.weight} tone={f.weight > 30 ? "bg-error" : "bg-primary"} suffix="%" />)}
+            <div className="grid grid-cols-2 gap-x-space-md gap-y-1.5 mb-space-md">
+              <MiniKV k="Entity type" v={sel.kind} />
+              <MiniKV k="Entity ID" v={sel.id} />
+              <MiniKV k="Risk score" v={`${sel.score} / 100`} />
+              <MiniKV k="Population percentile" v={`${sel.percentile}th`} />
+              <MiniKV k="Scoring period" v="Q2 FY26" />
+              <MiniKV k="Last scored" v={sel.lastScored} />
+              <MiniKV k="Model / version" v="risk-rank v2.3" />
+              <MiniKV k="Data freshness" v="Refreshed 2h ago" />
             </div>
-            <div className="grid grid-cols-3 gap-space-sm mt-space-md">
-              {[
-                { l: "Prior enforcement", v: sel.priorEnforcement, i: "gavel" },
-                { l: "Submission delays", v: sel.submissionDelays, i: "schedule" },
-                { l: "QR anomalies", v: sel.qrAnomalies, i: "qr_code_2" },
-              ].map((m) => (
-                <div key={m.l} className="bg-surface-container-low rounded-lg p-space-sm text-center">
-                  <Icon name={m.i} size={16} className="text-on-surface-variant" />
-                  <div className="font-headline-sm text-headline-sm font-bold text-on-surface">{m.v}</div>
-                  <div className="font-label-sm text-label-sm text-on-surface-variant leading-tight">{m.l}</div>
-                </div>
-              ))}
+            <div className="flex items-center gap-space-sm mb-space-md font-label-sm text-label-sm text-on-surface-variant">
+              <span className="font-semibold text-on-surface">Thresholds:</span>
+              <span className="px-1.5 py-0.5 rounded bg-forest-light text-forest-dark">Low &lt; 40</span>
+              <span className="px-1.5 py-0.5 rounded bg-solar-gold-light text-solar-gold-dark">Medium 40–69</span>
+              <span className="px-1.5 py-0.5 rounded bg-error-container text-on-error-container">High ≥ 70</span>
+            </div>
+
+            <div className="font-label-md text-label-md text-on-surface font-semibold mb-space-sm">Score explanation</div>
+            <div className="overflow-x-auto app-scroll">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-border-subtle">
+                    {["Factor", "Observed", "Impact", "Contribution", "Evidence"].map((h) => <th key={h} className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide py-1.5 pr-space-sm whitespace-nowrap">{h}</th>)}
+                  </tr>
+                </thead>
+                <tbody>
+                  {sel.factors.map((f) => (
+                    <tr key={f.label} className="border-b border-border-subtle/60">
+                      <td className="py-2 pr-space-sm font-body-sm text-body-sm text-on-surface">{f.label}</td>
+                      <td className="py-2 pr-space-sm font-body-sm text-body-sm text-on-surface-variant whitespace-nowrap">{f.observed}</td>
+                      <td className="py-2 pr-space-sm"><span className={`inline-flex items-center gap-0.5 font-label-sm text-label-sm ${f.direction === "up" ? "text-error" : "text-tertiary"}`}><Icon name={f.direction === "up" ? "arrow_upward" : "arrow_downward"} size={13} /> {f.direction === "up" ? "Increases" : "Reduces"}</span></td>
+                      <td className="py-2 pr-space-sm font-body-sm text-body-sm text-on-surface font-semibold whitespace-nowrap">{f.direction === "up" ? "+" : "−"}{f.contribution}</td>
+                      <td className="py-2 pr-space-sm"><button type="button" className="font-label-sm text-label-sm text-primary hover:underline">{f.evidence}</button></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </Card>
 
-          <Card title="Officer disposition">
-            <label className="font-label-sm text-label-sm text-on-surface-variant">Decision</label>
-            <select value={disposition} onChange={(e) => setDisposition(e.target.value)} className="w-full mt-1 mb-space-sm px-space-sm py-2 rounded-lg bg-surface-container-low font-body-sm text-body-sm outline-none">
-              <option value="assess">Open enforcement assessment</option>
-              <option value="monitor">Keep under monitoring</option>
-              <option value="dismiss">Dismiss — false positive</option>
-            </select>
-            <textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Reason / comments (recorded in audit trail)…" rows={3} className="w-full px-space-sm py-2 rounded-lg bg-surface-container-low font-body-sm text-body-sm outline-none resize-none" />
-            <div className="flex gap-space-sm mt-space-sm">
-              <button type="button" className="flex-1 flex items-center justify-center gap-1.5 bg-primary text-on-primary font-label-md text-label-md font-semibold py-2 rounded-lg hover:bg-forest-dark">
+          {recorded ? (
+            <Card title="Recorded disposition" action={<Status label="Logged" tone={OK} />}>
+              <div className="space-y-1.5">
+                <MiniKV k="Officer" v={recorded.officer} />
+                <MiniKV k="Role" v={recorded.role} />
+                <MiniKV k="Timestamp" v={recorded.timestamp} />
+                <MiniKV k="Decision" v={recorded.decision} />
+                <div><div className="font-label-sm text-label-sm text-on-surface-variant">Comments</div><div className="font-body-sm text-body-sm text-on-surface">{recorded.comments}</div></div>
+                <MiniKV k="Audit reference" v={recorded.auditRef} />
+              </div>
+              {recorded.decision.startsWith("Open enforcement") && (
+                <div className="flex items-start gap-space-sm bg-surface-container-low rounded-lg p-space-sm mt-space-sm">
+                  <Icon name="draft" size={16} className="text-solar-gold-dark shrink-0 mt-0.5" />
+                  <p className="font-body-sm text-body-sm text-on-surface">A <span className="font-semibold">draft</span> enforcement case was created for officer review. Enforcement is not initiated automatically. <Link href="/app/enforcement/case" className="text-primary hover:underline">Open case workspace</Link>.</p>
+                </div>
+              )}
+              <button type="button" onClick={() => setRecorded(null)} className="mt-space-sm font-label-sm text-label-sm text-primary hover:underline">Record a different disposition</button>
+            </Card>
+          ) : (
+            <Card title="Officer disposition">
+              <label className="font-label-sm text-label-sm text-on-surface-variant">Decision</label>
+              <select value={disposition} onChange={(e) => setDisposition(e.target.value)} className="w-full mt-1 mb-space-sm px-space-sm py-2 rounded-lg bg-surface-container-low font-body-sm text-body-sm outline-none">
+                <option value="assess">Open enforcement assessment</option>
+                <option value="monitor">Keep under monitoring</option>
+                <option value="dismiss">Dismiss — false positive</option>
+              </select>
+              <textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Comments are required and recorded in the audit trail…" rows={3} className="w-full px-space-sm py-2 rounded-lg bg-surface-container-low font-body-sm text-body-sm outline-none resize-none" />
+              <button type="button" onClick={record} disabled={!note.trim()}
+                className={`w-full mt-space-sm flex items-center justify-center gap-1.5 font-label-md text-label-md font-semibold py-2 rounded-lg ${note.trim() ? "bg-primary text-on-primary hover:bg-forest-dark" : "bg-surface-container text-on-surface-variant cursor-not-allowed"}`}>
                 <Icon name="assignment_turned_in" size={16} /> Record disposition
               </button>
-              <Link href="/app/enforcement/sample-plan" className="flex items-center justify-center gap-1.5 bg-surface-container text-on-surface font-label-md text-label-md py-2 px-space-sm rounded-lg hover:bg-forest-light">
-                <Icon name="gavel" size={16} /> Enforcement
-              </Link>
-            </div>
-          </Card>
+              {!note.trim() && <p className="font-label-sm text-label-sm text-on-surface-variant mt-1">Comments are required before a disposition can be recorded.</p>}
+            </Card>
+          )}
         </div>
       </div>
     </ScreenChrome>
@@ -271,6 +365,7 @@ export function ProductionAnomalyDetection({ module, screen }: { module: Module;
 
   return (
     <ScreenChrome module={module} screen={screen} subtitle="Anomaly queue · model anomaly-iforest v1.8">
+      <AIDisclaimer />
       <AdvisoryBanner text="Flagged records are statistically unusual, not proven violations. Each anomaly must be investigated and marked valid or confirmed by an officer before any action." />
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-space-md">
@@ -336,36 +431,59 @@ export function ProductionAnomalyDetection({ module, screen }: { module: Module;
  * 3) DOCUMENT INTELLIGENCE — split screen doc vs extracted fields.
  * ================================================================== */
 
-interface ExtractedField { field: string; entered: string; extracted: string; confidence: number; page: number; }
+interface ExtractedField { field: string; entered: string; extracted: string; ocr: number; confidence: number; page: number; }
 
 const DOC_FIELDS: ExtractedField[] = [
-  { field: "Brand / manufacturer", entered: "Nova Cool Appliances Ltd.", extracted: "Nova Cool Appliances Ltd.", confidence: 99, page: 1 },
-  { field: "Model number", entered: "FM-15TC5", extracted: "FM-15TC5", confidence: 97, page: 1 },
-  { field: "Declared ISEER", entered: "5.10", extracted: "4.90", confidence: 88, page: 2 },
-  { field: "Cooling capacity (W)", entered: "5000", extracted: "5000", confidence: 96, page: 2 },
-  { field: "Test laboratory", entered: "NABL-DEL-002", extracted: "NABL-DEL-020", confidence: 71, page: 3 },
-  { field: "Test report date", entered: "01 Sep 2026", extracted: "01 Sep 2026", confidence: 94, page: 3 },
+  { field: "Brand / manufacturer", entered: "Nova Cool Appliances Ltd.", extracted: "Nova Cool Appliances Ltd.", ocr: 99, confidence: 98, page: 1 },
+  { field: "Model number", entered: "FM-15TC5", extracted: "FM-15TC5", ocr: 98, confidence: 97, page: 1 },
+  { field: "Declared ISEER", entered: "5.10", extracted: "4.90", ocr: 93, confidence: 88, page: 2 },
+  { field: "Cooling capacity (W)", entered: "5000", extracted: "5000", ocr: 97, confidence: 96, page: 2 },
+  { field: "Test laboratory", entered: "NABL-DEL-002", extracted: "NABL-DEL-020", ocr: 82, confidence: 71, page: 3 },
+  { field: "Test report date", entered: "01 Sep 2026", extracted: "01 Sep 2026", ocr: 95, confidence: 94, page: 3 },
 ];
 
+const DOC_META = { filename: "TEST-REPORT-FM15TC5.pdf", version: "v1 (uploaded)", sha256: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" };
+type Dispo = "accept" | "correct" | "clarify";
+
 export function DocumentIntelligence({ module, screen }: { module: Module; screen: Screen }) {
+  const { role } = useRole();
+  const officer = roleByKey(role);
   const [page, setPage] = useState(1);
-  const mismatches = DOC_FIELDS.filter((f) => f.entered !== f.extracted).length;
+  const [sel, setSel] = useState<string | null>(null);
+  const [dispo, setDispo] = useState<Record<string, Dispo>>({});
+  const [done, setDone] = useState<null | { reviewer: string; ts: string; corrections: number; clarifications: number; auditRef: string }>(null);
+
+  const mismatches = DOC_FIELDS.filter((f) => f.entered !== f.extracted);
+  const allDispositioned = mismatches.every((f) => dispo[f.field]);
+
+  function setField(field: string, page: number) { setSel(field); setPage(page); }
+  function complete() {
+    if (!allDispositioned) return;
+    const vals = Object.values(dispo);
+    setDone({
+      reviewer: officer.name, ts: new Date().toLocaleString("en-IN"),
+      corrections: vals.filter((d) => d === "correct").length,
+      clarifications: vals.filter((d) => d === "clarify").length,
+      auditRef: `AUD-DOC-${Math.floor(Math.random() * 9000 + 1000)}`,
+    });
+  }
 
   return (
     <ScreenChrome module={module} screen={screen} subtitle="Certificate vs entered data · model doc-extract v3.1">
+      <AIDisclaimer />
       <div className="flex flex-wrap items-center gap-space-md">
-        <div className="flex items-center gap-1.5 font-label-md text-label-md"><span className="w-2.5 h-2.5 rounded-full bg-error inline-block" /> {mismatches} field mismatches</div>
-        <div className="flex items-center gap-1.5 font-label-md text-label-md text-on-surface-variant"><span className="w-2.5 h-2.5 rounded-full bg-tertiary inline-block" /> {DOC_FIELDS.length - mismatches} matched</div>
-        <span className="font-label-sm text-label-sm text-on-surface-variant">Source: TEST-REPORT-FM15TC5.pdf</span>
+        <div className="flex items-center gap-1.5 font-label-md text-label-md"><span className="w-2.5 h-2.5 rounded-full bg-error inline-block" /> {mismatches.length} field mismatches</div>
+        <div className="flex items-center gap-1.5 font-label-md text-label-md text-on-surface-variant"><span className="w-2.5 h-2.5 rounded-full bg-tertiary inline-block" /> {DOC_FIELDS.length - mismatches.length} matched</div>
+        <span className="font-label-sm text-label-sm text-on-surface-variant">{DOC_META.filename} · {DOC_META.version}</span>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-space-md">
         {/* Left: document preview */}
         <Card title="Uploaded document" action={
           <div className="flex items-center gap-space-sm font-label-sm text-label-sm">
-            <button type="button" onClick={() => setPage((p) => Math.max(1, p - 1))} className="text-on-surface-variant hover:text-primary"><Icon name="chevron_left" size={18} /></button>
+            <button type="button" onClick={() => setPage((p) => Math.max(1, p - 1))} className="text-on-surface-variant hover:text-primary" aria-label="Previous page"><Icon name="chevron_left" size={18} /></button>
             <span>Page {page} / 3</span>
-            <button type="button" onClick={() => setPage((p) => Math.min(3, p + 1))} className="text-on-surface-variant hover:text-primary"><Icon name="chevron_right" size={18} /></button>
+            <button type="button" onClick={() => setPage((p) => Math.min(3, p + 1))} className="text-on-surface-variant hover:text-primary" aria-label="Next page"><Icon name="chevron_right" size={18} /></button>
           </div>
         }>
           <div className="aspect-[3/4] bg-surface-container-low rounded-lg border border-border-subtle p-space-md overflow-hidden">
@@ -375,18 +493,26 @@ export function DocumentIntelligence({ module, screen }: { module: Module; scree
                 <div className="font-label-sm text-label-sm text-on-surface-variant">NABL-accredited laboratory · Page {page}</div>
               </div>
               <div className="space-y-2 flex-1">
-                {DOC_FIELDS.filter((f) => f.page === page).map((f) => (
-                  <div key={f.field} className={`p-space-sm rounded-lg ${f.entered !== f.extracted ? "bg-error-container/50 ring-1 ring-error/40" : "bg-surface-card"}`}>
-                    <div className="font-label-sm text-label-sm text-on-surface-variant">{f.field}</div>
-                    <div className="font-body-md text-body-md text-on-surface font-semibold">{f.extracted}</div>
-                  </div>
-                ))}
+                {DOC_FIELDS.filter((f) => f.page === page).map((f) => {
+                  const mm = f.entered !== f.extracted;
+                  const active = sel === f.field;
+                  return (
+                    <div key={f.field} className={`p-space-sm rounded-lg transition-all ${active ? "ring-2 ring-primary bg-primary-container/30" : mm ? "bg-error-container/50 ring-1 ring-error/40" : "bg-surface-card"}`}>
+                      <div className="font-label-sm text-label-sm text-on-surface-variant">{f.field}</div>
+                      <div className="font-body-md text-body-md text-on-surface font-semibold">{f.extracted}</div>
+                    </div>
+                  );
+                })}
                 {DOC_FIELDS.filter((f) => f.page === page).length === 0 && (
                   <div className="text-center font-label-sm text-label-sm text-on-surface-variant pt-space-lg">No extracted fields on this page.</div>
                 )}
               </div>
-              <div className="text-center font-label-sm text-label-sm text-on-surface-variant/60 border-t border-border-subtle pt-space-sm">Highlighted blocks are AI-detected source regions.</div>
+              <div className="text-center font-label-sm text-label-sm text-on-surface-variant/60 border-t border-border-subtle pt-space-sm">Selecting a field highlights its source region.</div>
             </div>
+          </div>
+          <div className="mt-space-sm space-y-1">
+            <div className="flex items-start justify-between gap-space-sm"><span className="font-label-sm text-label-sm text-on-surface-variant">Document version</span><span className="font-label-md text-label-md text-on-surface">{DOC_META.version}</span></div>
+            <div><div className="font-label-sm text-label-sm text-on-surface-variant">SHA-256</div><div className="font-mono text-label-sm break-all text-on-surface-variant">{DOC_META.sha256}</div></div>
           </div>
         </Card>
 
@@ -395,41 +521,59 @@ export function DocumentIntelligence({ module, screen }: { module: Module; scree
           <div className="space-y-space-sm">
             {DOC_FIELDS.map((f) => {
               const mismatch = f.entered !== f.extracted;
+              const d = dispo[f.field];
               return (
-                <div key={f.field} className={`rounded-lg p-space-sm ${mismatch ? "bg-error-container/40 ring-1 ring-error/30" : "bg-surface-container-low"}`}>
+                <button type="button" key={f.field} onClick={() => setField(f.field, f.page)} className={`w-full text-left rounded-lg p-space-sm transition-all ${sel === f.field ? "ring-2 ring-primary" : ""} ${mismatch ? "bg-error-container/40" : "bg-surface-container-low"}`}>
                   <div className="flex items-center justify-between mb-1">
                     <span className="font-label-md text-label-md text-on-surface font-semibold">{f.field}</span>
-                    <button type="button" onClick={() => setPage(f.page)} className="font-label-sm text-label-sm text-primary hover:underline">p.{f.page}</button>
+                    <span className="font-label-sm text-label-sm text-primary">p.{f.page}</span>
                   </div>
                   <div className="grid grid-cols-2 gap-space-sm">
-                    <div>
-                      <div className="font-label-sm text-label-sm text-on-surface-variant">Entered</div>
-                      <div className={`font-body-sm text-body-sm ${mismatch ? "text-error font-semibold" : "text-on-surface"}`}>{f.entered}</div>
-                    </div>
-                    <div>
-                      <div className="font-label-sm text-label-sm text-on-surface-variant">Extracted</div>
-                      <div className={`font-body-sm text-body-sm ${mismatch ? "text-error font-semibold" : "text-on-surface"}`}>{f.extracted}</div>
-                    </div>
+                    <div><div className="font-label-sm text-label-sm text-on-surface-variant">Entered</div><div className={`font-body-sm text-body-sm ${mismatch ? "text-error font-semibold" : "text-on-surface"}`}>{f.entered}</div></div>
+                    <div><div className="font-label-sm text-label-sm text-on-surface-variant">Extracted</div><div className={`font-body-sm text-body-sm ${mismatch ? "text-error font-semibold" : "text-on-surface"}`}>{f.extracted}</div></div>
                   </div>
-                  <div className="flex items-center justify-between mt-space-sm">
-                    <Confidence pct={f.confidence} />
-                    {mismatch ? (
-                      <div className="flex gap-1.5">
-                        <button type="button" className="font-label-sm text-label-sm bg-forest-light text-forest-dark px-2 py-1 rounded hover:bg-tertiary hover:text-on-primary">Use entered</button>
-                        <button type="button" className="font-label-sm text-label-sm bg-primary text-on-primary px-2 py-1 rounded hover:bg-forest-dark">Correct</button>
-                        <button type="button" className="font-label-sm text-label-sm bg-surface-container text-on-surface px-2 py-1 rounded hover:bg-solar-gold-light">Clarify</button>
-                      </div>
-                    ) : (
-                      <span className="font-label-sm text-label-sm text-tertiary flex items-center gap-1"><Icon name="check" size={14} /> Match</span>
-                    )}
+                  <div className="flex items-center gap-space-md mt-space-sm">
+                    <span className="font-label-sm text-label-sm text-on-surface-variant">OCR</span><Confidence pct={f.ocr} />
+                    <span className="font-label-sm text-label-sm text-on-surface-variant">Extract</span><Confidence pct={f.confidence} />
                   </div>
-                </div>
+                  {mismatch ? (
+                    <div className="flex flex-wrap gap-1.5 mt-space-sm">
+                      {([["accept", "Accept entered"], ["correct", "Correct"], ["clarify", "Request clarification"]] as [Dispo, string][]).map(([key, lbl]) => (
+                        <span key={key} onClick={(e) => { e.stopPropagation(); setDispo((m) => ({ ...m, [f.field]: key })); }}
+                          className={`font-label-sm text-label-sm px-2 py-1 rounded cursor-pointer ${d === key ? "bg-primary text-on-primary" : "bg-surface-container text-on-surface hover:bg-forest-light"}`}>{lbl}</span>
+                      ))}
+                      {d && <span className="font-label-sm text-label-sm text-tertiary flex items-center gap-1"><Icon name="check" size={13} /> set</span>}
+                    </div>
+                  ) : (
+                    <span className="font-label-sm text-label-sm text-tertiary flex items-center gap-1 mt-space-sm"><Icon name="check" size={14} /> Match</span>
+                  )}
+                </button>
               );
             })}
           </div>
-          <div className="font-label-sm text-label-sm text-on-surface-variant mt-space-md border-t border-border-subtle pt-space-sm">
-            Extraction model doc-extract v3.1 · OCR + layout parser · confidence is per-field, human review required below 85%.
-          </div>
+
+          {done ? (
+            <div className="mt-space-md bg-forest-light/50 rounded-lg p-space-md">
+              <div className="flex items-center gap-space-sm mb-space-sm"><Icon name="task_alt" size={20} className="text-tertiary" /><span className="font-title-sm text-title-sm text-on-surface font-semibold">Review complete</span></div>
+              <div className="grid grid-cols-2 gap-1.5">
+                <MiniKV k="Reviewer" v={done.reviewer} />
+                <MiniKV k="Reviewed at" v={done.ts} />
+                <MiniKV k="Corrections made" v={String(done.corrections)} />
+                <MiniKV k="Clarifications requested" v={String(done.clarifications)} />
+                <MiniKV k="Model / version" v="doc-extract v3.1" />
+                <MiniKV k="Audit reference" v={done.auditRef} />
+              </div>
+              <p className="font-label-sm text-label-sm text-on-surface-variant mt-space-sm">Corrections are stored only as <span className="font-semibold">candidate supervised feedback pending governance approval</span> — they are not used for model retraining automatically.</p>
+            </div>
+          ) : (
+            <div className="mt-space-md border-t border-border-subtle pt-space-sm">
+              <button type="button" onClick={complete} disabled={!allDispositioned}
+                className={`w-full flex items-center justify-center gap-1.5 font-label-md text-label-md font-semibold py-2 rounded-lg ${allDispositioned ? "bg-primary text-on-primary hover:bg-forest-dark" : "bg-surface-container text-on-surface-variant cursor-not-allowed"}`}>
+                <Icon name="fact_check" size={16} /> Complete review
+              </button>
+              <p className="font-label-sm text-label-sm text-on-surface-variant mt-1">{allDispositioned ? "All mismatches have a disposition." : `Disposition all ${mismatches.length} mismatches to enable completion.`} Extraction model doc-extract v3.1.</p>
+            </div>
+          )}
         </Card>
       </div>
     </ScreenChrome>
@@ -440,22 +584,37 @@ export function DocumentIntelligence({ module, screen }: { module: Module; scree
  * 4) HELPDESK AI ASSISTANT — conversation + routing assist.
  * ================================================================== */
 
+const THRESHOLD = 70;
+
 export function HelpdeskAssistant({ module, screen }: { module: Module; screen: Screen }) {
+  const { role } = useRole();
+  const agent = roleByKey(role);
   const [reply, setReply] = useState(
     "You can verify a BEE star label by scanning the QR code on the appliance, or by entering the registration number at bee-portal /verify. A genuine label returns the brand, model and star rating."
   );
+  const [simLow, setSimLow] = useState(false);
+  const [preview, setPreview] = useState(false);
+  const [sent, setSent] = useState(false);
+  const confidence = simLow ? 58 : 82;
+  const lowConf = confidence < THRESHOLD;
+
   const transcript = [
     { who: "user", text: "How do I check if a star label on my new AC is genuine?" },
     { who: "ai", text: "You can scan the QR code on the label to verify it instantly." },
-    { who: "user", text: "There is no QR, only a registration number BEE/RAC/2026/10016." },
+    { who: "user", text: "There is no QR, only a registration number BEE/RAC/2026/10016. Call me on +91 98•••••210." },
   ];
 
   return (
     <ScreenChrome module={module} screen={screen} subtitle="Conversation + routing assist · model assist-rag v1.4">
+      <AIDisclaimer />
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-space-md">
         {/* Transcript */}
         <div className="lg:col-span-3">
-          <Card title="Conversation transcript">
+          <Card title="Conversation transcript" action={
+            <label className="flex items-center gap-1.5 font-label-sm text-label-sm text-on-surface-variant cursor-pointer">
+              <input type="checkbox" checked={simLow} onChange={(e) => { setSimLow(e.target.checked); setPreview(false); setSent(false); }} className="accent-primary" /> Simulate low confidence
+            </label>
+          }>
             <div className="space-y-space-sm">
               {transcript.map((m, i) => (
                 <div key={i} className={`flex ${m.who === "user" ? "justify-start" : "justify-end"}`}>
@@ -466,19 +625,47 @@ export function HelpdeskAssistant({ module, screen }: { module: Module; screen: 
                 </div>
               ))}
             </div>
+            <p className="font-label-sm text-label-sm text-on-surface-variant mt-space-sm flex items-center gap-1"><Icon name="visibility_off" size={13} /> Personal information is masked in the transcript and audit log.</p>
 
             <div className="mt-space-md border-t border-border-subtle pt-space-md">
-              <div className="flex items-center justify-between mb-space-sm">
-                <span className="font-label-md text-label-md text-on-surface font-semibold">Suggested response</span>
-                <Confidence pct={82} />
-              </div>
-              <textarea value={reply} onChange={(e) => setReply(e.target.value)} rows={4} className="w-full px-space-sm py-2 rounded-lg bg-surface-container-low font-body-sm text-body-sm outline-none resize-none" />
-              <div className="flex flex-wrap gap-space-sm mt-space-sm">
-                <button type="button" className="flex items-center gap-1.5 bg-primary text-on-primary font-label-md text-label-md font-semibold py-2 px-space-md rounded-lg hover:bg-forest-dark"><Icon name="send" size={16} /> Accept &amp; send</button>
-                <button type="button" className="flex items-center gap-1.5 bg-surface-container text-on-surface font-label-md text-label-md py-2 px-space-md rounded-lg hover:bg-forest-light"><Icon name="edit" size={16} /> Edit</button>
-                <button type="button" className="flex items-center gap-1.5 bg-surface-container text-on-surface font-label-md text-label-md py-2 px-space-md rounded-lg hover:bg-error-container"><Icon name="block" size={16} /> Reject</button>
-                <button type="button" className="flex items-center gap-1.5 bg-solar-gold-light text-solar-gold-dark font-label-md text-label-md font-semibold py-2 px-space-md rounded-lg ml-auto hover:bg-solar-gold hover:text-on-primary"><Icon name="support_agent" size={16} /> Escalate to human</button>
-              </div>
+              {lowConf ? (
+                <div className="bg-solar-gold-light/50 border border-solar-gold/40 rounded-lg p-space-md">
+                  <div className="flex items-center gap-space-sm mb-1"><Icon name="warning" size={18} className="text-solar-gold-dark" /><span className="font-title-sm text-title-sm text-on-surface font-semibold">Confidence is insufficient</span><Confidence pct={confidence} /></div>
+                  <p className="font-body-sm text-body-sm text-on-surface">No authoritative response is generated below the {THRESHOLD}% threshold. Escalation to a human agent is recommended.</p>
+                  <button type="button" className="mt-space-sm flex items-center gap-1.5 bg-solar-gold-light text-solar-gold-dark font-label-md text-label-md font-semibold py-2 px-space-md rounded-lg hover:bg-solar-gold hover:text-on-primary"><Icon name="support_agent" size={16} /> Escalate to human</button>
+                </div>
+              ) : sent ? (
+                <div className="bg-forest-light/50 rounded-lg p-space-md">
+                  <div className="flex items-center gap-space-sm"><Icon name="mark_email_read" size={20} className="text-tertiary" /><span className="font-title-sm text-title-sm text-on-surface font-semibold">Sent by {agent.name}</span></div>
+                  <p className="font-label-sm text-label-sm text-on-surface-variant mt-1">The helpdesk agent is the sender of record. AI assisted with the draft only.</p>
+                </div>
+              ) : preview ? (
+                <div className="border border-primary/40 rounded-lg p-space-md bg-primary-container/20">
+                  <div className="font-label-md text-label-md text-on-surface font-semibold mb-space-sm">Confirm &amp; send — editable preview</div>
+                  <textarea value={reply} onChange={(e) => setReply(e.target.value)} rows={4} className="w-full px-space-sm py-2 rounded-lg bg-surface-card font-body-sm text-body-sm outline-none resize-none" />
+                  <div className="flex items-center justify-between mt-space-sm">
+                    <span className="font-label-sm text-label-sm text-on-surface-variant">Sender of record: <span className="font-semibold text-on-surface">{agent.name}</span></span>
+                    <div className="flex gap-space-sm">
+                      <button type="button" onClick={() => setPreview(false)} className="font-label-md text-label-md text-on-surface bg-surface-container py-1.5 px-space-sm rounded-lg hover:bg-forest-light">Cancel</button>
+                      <button type="button" onClick={() => setSent(true)} className="flex items-center gap-1.5 bg-primary text-on-primary font-label-md text-label-md font-semibold py-1.5 px-space-md rounded-lg hover:bg-forest-dark"><Icon name="send" size={16} /> Confirm send</button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="flex items-center justify-between mb-space-sm">
+                    <span className="font-label-md text-label-md text-on-surface font-semibold">Suggested response</span>
+                    <Confidence pct={confidence} />
+                  </div>
+                  <textarea value={reply} onChange={(e) => setReply(e.target.value)} rows={4} className="w-full px-space-sm py-2 rounded-lg bg-surface-container-low font-body-sm text-body-sm outline-none resize-none" />
+                  <div className="flex flex-wrap gap-space-sm mt-space-sm">
+                    <button type="button" onClick={() => setPreview(true)} className="flex items-center gap-1.5 bg-primary text-on-primary font-label-md text-label-md font-semibold py-2 px-space-md rounded-lg hover:bg-forest-dark"><Icon name="send" size={16} /> Accept &amp; send</button>
+                    <button type="button" className="flex items-center gap-1.5 bg-surface-container text-on-surface font-label-md text-label-md py-2 px-space-md rounded-lg hover:bg-forest-light"><Icon name="edit" size={16} /> Edit</button>
+                    <button type="button" className="flex items-center gap-1.5 bg-surface-container text-on-surface font-label-md text-label-md py-2 px-space-md rounded-lg hover:bg-error-container"><Icon name="block" size={16} /> Reject</button>
+                    <button type="button" className="flex items-center gap-1.5 bg-solar-gold-light text-solar-gold-dark font-label-md text-label-md font-semibold py-2 px-space-md rounded-lg ml-auto hover:bg-solar-gold hover:text-on-primary"><Icon name="support_agent" size={16} /> Escalate to human</button>
+                  </div>
+                </>
+              )}
             </div>
           </Card>
         </div>
@@ -495,17 +682,21 @@ export function HelpdeskAssistant({ module, screen }: { module: Module; screen: 
               </div>
               <div className="flex items-center justify-between">
                 <span className="font-label-sm text-label-sm text-on-surface-variant">Intent confidence</span>
-                <Confidence pct={82} />
+                <Confidence pct={confidence} />
               </div>
             </div>
           </Card>
 
-          <Card title="Knowledge sources used">
+          <Card title="Knowledge sources &amp; excerpts">
             <div className="space-y-1.5">
-              {["KB-114 · Verifying a genuine star label", "KB-090 · Registration number format", "FAQ · What if there is no QR code?"].map((s) => (
-                <div key={s} className="flex items-start gap-space-sm bg-surface-container-low rounded-lg p-space-sm">
-                  <Icon name="menu_book" size={16} className="text-primary shrink-0 mt-0.5" />
-                  <span className="font-body-sm text-body-sm text-on-surface">{s}</span>
+              {[
+                { s: "KB-114 · Verifying a genuine star label", ex: "“Scan the QR code or enter the registration number at the BEE verification portal.”" },
+                { s: "KB-090 · Registration number format", ex: "“BEE registration numbers follow BEE/<category>/<year>/<serial>.”" },
+                { s: "FAQ · What if there is no QR code?", ex: "“Enter the printed registration number to confirm the model and rating.”" },
+              ].map((k) => (
+                <div key={k.s} className="bg-surface-container-low rounded-lg p-space-sm">
+                  <div className="flex items-start gap-space-sm"><Icon name="menu_book" size={16} className="text-primary shrink-0 mt-0.5" /><span className="font-label-md text-label-md text-on-surface font-semibold">{k.s}</span></div>
+                  <p className="font-body-sm text-body-sm text-on-surface-variant mt-0.5 pl-6 italic">{k.ex}</p>
                 </div>
               ))}
             </div>
@@ -552,6 +743,7 @@ export function StarRatingTrends({ module, screen }: { module: Module; screen: S
 
   return (
     <ScreenChrome module={module} screen={screen} subtitle="Distribution & thresholds · model trend-stats v2.0">
+      <AIDisclaimer />
       <div className="flex flex-wrap items-center gap-space-sm">
         <select value={category} onChange={(e) => setCategory(e.target.value)} className="px-space-sm py-2 rounded-lg bg-surface-card shadow-sm font-body-sm text-body-sm outline-none">
           {["Room ACs", "Refrigerators", "Ceiling Fans", "LED Lamps", "Water Heaters"].map((c) => <option key={c}>{c}</option>)}
@@ -563,7 +755,7 @@ export function StarRatingTrends({ module, screen }: { module: Module; screen: S
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-space-md">
-        <Card title={`Star distribution — ${category}`}>
+        <Card title={`Star distribution — ${category}`} action={<span className="px-2 py-0.5 rounded-full bg-forest-light text-forest-dark font-label-sm text-label-sm font-semibold">Observed</span>}>
           <div className="flex items-end justify-around h-48 gap-space-sm pt-space-md">
             {DIST_AFTER.map((v, i) => (
               <div key={i} className="flex-1 flex flex-col items-center justify-end h-full">
@@ -579,7 +771,7 @@ export function StarRatingTrends({ module, screen }: { module: Module; screen: S
           </div>
         </Card>
 
-        <Card title="Average rating over time">
+        <Card title="Average rating over time" action={<span className="px-2 py-0.5 rounded-full bg-forest-light text-forest-dark font-label-sm text-label-sm font-semibold">Observed</span>}>
           <div className="flex items-end justify-around h-48 gap-space-sm pt-space-md relative">
             {TREND.map((t) => (
               <div key={t.q} className="flex-1 flex flex-col items-center justify-end h-full">
@@ -595,7 +787,7 @@ export function StarRatingTrends({ module, screen }: { module: Module; screen: S
         </Card>
       </div>
 
-      <Card title="Before / after policy comparison">
+      <Card title="Before / after policy comparison" action={<span className="px-2 py-0.5 rounded-full bg-solar-gold-light text-solar-gold-dark font-label-sm text-label-sm font-semibold">Simulated — threshold revision</span>}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-space-lg">
           {[{ label: "Before revision", data: DIST_BEFORE, tone: "bg-outline" }, { label: "After revision", data: DIST_AFTER, tone: "bg-primary" }].map((block) => (
             <div key={block.label}>
@@ -637,11 +829,23 @@ const DRIFT_TONE: Record<GovModel["drift"], string> = { Low: OK, Rising: WARN, H
 const GOV_STATUS_TONE: Record<GovModel["status"], string> = { Approved: OK, Shadow: WARN, Retired: "bg-surface-container text-on-surface-variant" };
 
 export function AIModelGovernance({ module, screen }: { module: Module; screen: Screen }) {
+  const { role } = useRole();
+  const maker = roleByKey(role);
   const [selName, setSelName] = useState(GOV_MODELS[0].name);
+  const [action, setAction] = useState("");
+  const [reason, setReason] = useState("");
+  const [pending, setPending] = useState<null | { action: string; reason: string; maker: string }>(null);
   const sel = GOV_MODELS.find((m) => m.name === selName)!;
+
+  function submitMaker() {
+    if (!action || !reason.trim()) return;
+    setPending({ action, reason: reason.trim(), maker: maker.name });
+    setAction(""); setReason("");
+  }
 
   return (
     <ScreenChrome module={module} screen={screen} subtitle="Model registry & controls · restricted">
+      <AIDisclaimer />
       <div className="flex items-start gap-space-sm bg-navy-subtle border border-navy-dark/20 rounded-xl p-space-sm">
         <Icon name="shield" size={18} className="text-navy-dark shrink-0 mt-0.5" />
         <p className="font-body-sm text-body-sm text-on-surface"><span className="font-semibold">Restricted view.</span> AI model governance is separate from business insights and limited to authorised model owners, administrators and auditors.</p>
@@ -678,12 +882,21 @@ export function AIModelGovernance({ module, screen }: { module: Module; screen: 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-space-md">
         <Card title={`${sel.name} ${sel.version}`} action={<Status label={sel.status} tone={GOV_STATUS_TONE[sel.status]} />}>
           <div className="space-y-space-sm">
+            <Row label="Business owner" value={sel.owner} />
+            <Row label="Technical owner" value="BEE Data Platform team" />
+            <Row label="Deployment status" value={sel.status === "Approved" ? "Production" : sel.status === "Shadow" ? "Shadow (challenger)" : "Retired"} />
             <Row label="Training-data period" value={sel.trained} />
-            <Row label="Responsible owner" value={sel.owner} />
+            <Row label="Dataset / lineage" value={`ds-${sel.name}-2026Q2 · lineage tracked`} />
+            <Row label="Last validation" value={sel.retrained === "—" ? "Not validated" : sel.retrained} />
             <Row label="Last retraining" value={sel.retrained} />
-            <div className="flex items-center justify-between"><span className="font-label-sm text-label-sm text-on-surface-variant">Model drift</span><Status label={sel.drift} tone={DRIFT_TONE[sel.drift]} /></div>
+            <div className="flex items-center justify-between"><span className="font-label-sm text-label-sm text-on-surface-variant">Model drift (threshold 5%)</span><Status label={sel.drift} tone={DRIFT_TONE[sel.drift]} /></div>
             <Bar label="Accuracy" value={sel.accuracy} tone="bg-tertiary" suffix="%" />
             <Bar label="Human override rate" value={sel.override} tone={sel.override > 25 ? "bg-error" : "bg-solar-gold-dark"} suffix="%" />
+            <div className="flex flex-wrap gap-1.5 pt-1">
+              {["Validation report", "Fairness assessment", "Explainability report"].map((r) => (
+                <button key={r} type="button" className="inline-flex items-center gap-1 font-label-sm text-label-sm text-primary bg-surface-container-low px-2 py-1 rounded hover:bg-forest-light"><Icon name="description" size={13} /> {r}</button>
+              ))}
+            </div>
           </div>
         </Card>
 
@@ -703,16 +916,38 @@ export function AIModelGovernance({ module, screen }: { module: Module; screen: 
             </div>
           </Card>
 
-          <Card title="Controls &amp; evidence">
-            <div className="flex flex-wrap gap-space-sm mb-space-sm">
-              <button type="button" className="flex items-center gap-1.5 bg-error-container text-on-error-container font-label-md text-label-md font-semibold py-2 px-space-md rounded-lg hover:bg-error hover:text-on-error"><Icon name="undo" size={16} /> Roll back version</button>
-              <button type="button" className="flex items-center gap-1.5 bg-surface-container text-on-surface font-label-md text-label-md py-2 px-space-md rounded-lg hover:bg-forest-light"><Icon name="pause_circle" size={16} /> Pause model</button>
-            </div>
-            <div className="space-y-1.5">
-              {["Fairness assessment — passed (Jun 2026)", "Explainability report (SHAP) available", "Bias audit — no protected-attribute leakage"].map((e) => (
-                <div key={e} className="flex items-center gap-space-sm font-body-sm text-body-sm text-on-surface"><Icon name="verified" size={15} className="text-tertiary shrink-0" /> {e}</div>
-              ))}
-            </div>
+          <Card title="Controls — maker / checker">
+            {pending ? (
+              <div className="bg-solar-gold-light/50 border border-solar-gold/40 rounded-lg p-space-md">
+                <div className="flex items-center gap-space-sm mb-1"><Icon name="hourglass_top" size={18} className="text-solar-gold-dark" /><span className="font-title-sm text-title-sm text-on-surface font-semibold">Awaiting checker approval</span></div>
+                <div className="space-y-1 mt-space-sm">
+                  <MiniKV k="Requested action" v={pending.action} />
+                  <MiniKV k="Requested by (maker)" v={pending.maker} />
+                  <div><div className="font-label-sm text-label-sm text-on-surface-variant">Reason</div><div className="font-body-sm text-body-sm text-on-surface">{pending.reason}</div></div>
+                </div>
+                <div className="flex items-center gap-space-sm mt-space-md">
+                  <button type="button" disabled title="A different authorised user must approve" className="flex items-center gap-1.5 bg-surface-container text-on-surface-variant font-label-md text-label-md py-2 px-space-md rounded-lg cursor-not-allowed"><Icon name="lock" size={16} /> Approve as checker</button>
+                  <button type="button" onClick={() => setPending(null)} className="font-label-md text-label-md text-on-surface bg-surface-container py-2 px-space-sm rounded-lg hover:bg-forest-light">Withdraw</button>
+                </div>
+                <p className="font-label-sm text-label-sm text-error mt-space-sm flex items-start gap-1"><Icon name="info" size={13} className="mt-0.5" /> The maker cannot approve their own request. A second authorised administrator must confirm before the change is applied.</p>
+              </div>
+            ) : (
+              <>
+                <label className="font-label-sm text-label-sm text-on-surface-variant">Operation (requires maker-checker approval)</label>
+                <select value={action} onChange={(e) => setAction(e.target.value)} className="w-full mt-1 mb-space-sm px-space-sm py-2 rounded-lg bg-surface-container-low font-body-sm text-body-sm outline-none">
+                  <option value="">Select an operation…</option>
+                  <option value="Pause model">Pause model</option>
+                  <option value="Roll back to previous version">Roll back to previous version</option>
+                  <option value="Deploy new version">Deploy new version</option>
+                </select>
+                <textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Reason (required, recorded in audit trail)…" rows={2} className="w-full px-space-sm py-2 rounded-lg bg-surface-container-low font-body-sm text-body-sm outline-none resize-none" />
+                <button type="button" onClick={submitMaker} disabled={!action || !reason.trim()}
+                  className={`w-full mt-space-sm flex items-center justify-center gap-1.5 font-label-md text-label-md font-semibold py-2 rounded-lg ${action && reason.trim() ? "bg-primary text-on-primary hover:bg-forest-dark" : "bg-surface-container text-on-surface-variant cursor-not-allowed"}`}>
+                  <Icon name="how_to_reg" size={16} /> Submit for approval
+                </button>
+                <p className="font-label-sm text-label-sm text-on-surface-variant mt-1">A single administrator cannot pause or roll back a production model — every change needs a second checker and an audit entry.</p>
+              </>
+            )}
           </Card>
         </div>
       </div>

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Icon } from "@/components/ui/Icon";
-import { AI_USECASES, HEALTH_META } from "@/components/app/ai/AIScreens";
+import { AI_USECASES, HEALTH_META, AIDisclaimer } from "@/components/app/ai/AIScreens";
 
 export default function AIInsightsLanding() {
   return (
@@ -22,6 +22,8 @@ export default function AIInsightsLanding() {
           <p className="font-label-sm text-label-sm text-on-surface-variant">Five committed AI use cases — each surfaces exceptions for human review; nothing acts automatically.</p>
         </div>
       </div>
+
+      <AIDisclaimer />
 
       {/* Use-case cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-space-md">
