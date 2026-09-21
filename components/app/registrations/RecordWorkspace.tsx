@@ -5,6 +5,8 @@ import { useState } from "react";
 import { Icon } from "@/components/ui/Icon";
 import { Stars } from "@/components/ui/Stars";
 import { Card, Status, OK, WARN, BAD } from "@/components/app/ScreenScaffold";
+import { CertificateLedgerPanel, CertificateHistoryPanel } from "@/components/app/blockchain/CertificateLedger";
+import { PRIMARY_CERT } from "@/lib/mock/certificate";
 
 /* ================================================================== *
  * Registration Record Workspace (Phase 3) — agency, brand and model
@@ -125,6 +127,8 @@ export default function RecordWorkspace() {
     { id: "scrutiny", label: "Scrutiny", icon: "fact_check" },
     { id: "approval", label: "Approval", icon: "how_to_vote" },
     ...(r.type === "Model" ? [{ id: "rating", label: "Rating & label", icon: "star" }] : []),
+    ...(r.type === "Model" ? [{ id: "certificate", label: "Certificate & Ledger", icon: "verified_user" }] : []),
+    ...(r.type === "Model" ? [{ id: "certhistory", label: "Certificate history", icon: "manage_history" }] : []),
     { id: "payment", label: "Payment", icon: "payments" },
     { id: "history", label: "History", icon: "history" },
   ];
@@ -289,6 +293,10 @@ export default function RecordWorkspace() {
           </Card>
         </div>
       )}
+
+      {activeTab === "certificate" && r.type === "Model" && <CertificateLedgerPanel cert={PRIMARY_CERT} />}
+
+      {activeTab === "certhistory" && r.type === "Model" && <CertificateHistoryPanel cert={PRIMARY_CERT} />}
 
       {activeTab === "payment" && (
         <Card title="Payment">

@@ -1,16 +1,16 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Icon } from "@/components/ui/Icon";
-import { Stars } from "@/components/ui/Stars";
 import { PseudoQR } from "@/components/ui/PseudoQR";
 import { Card, FakeTable, ScreenChrome, Status, OK, WARN, BAD, INFO } from "@/components/app/ScreenScaffold";
 import { useQR } from "@/components/app/QRStore";
 import { Module, Screen } from "@/lib/screens";
 import { QRBatch, PERIODS, batchCsv } from "@/lib/mock/qr";
-import { APPLIANCES } from "@/lib/mock/appliances";
+import { VERIFY_SCENARIOS, VerifyScenario } from "@/lib/mock/certificate";
+import { VerificationResult } from "@/components/app/blockchain/VerificationResult";
 import { useActor } from "./shared";
 
 const STATUS_TONE: Record<string, string> = { requested: INFO, allocated: WARN, bound: OK };
@@ -311,70 +311,44 @@ export function QRDownload({ module, screen }: { module: Module; screen: Screen 
 }
 
 /* ------------------------- Verification (internal) ------------------------ */
-interface Resolved {
-  model: string; brand: string; regId: string; rating: number; iseer: number; status: string; qrBatch?: string;
-}
-
-function useResolver() {
-  const { batches, activeModels } = useQR();
-  return useMemo(() => {
-    const map = new Map<string, Resolved>();
-    // static public registry
-    APPLIANCES.forEach((a) => map.set(a.regId, { model: a.model, brand: a.brand, regId: a.regId, rating: a.stars, iseer: a.iseer, status: "Active" }));
-    // live lifecycle active models
-    activeModels.forEach((a) => a.regId && map.set(a.regId, { model: a.model, brand: a.brand, regId: a.regId, rating: a.rating ?? 5, iseer: a.declaredIseer, status: "Active", qrBatch: a.qrBatch }));
-    // QR ids → resolve to their batch's model
-    const byQr = new Map<string, Resolved>();
-    batches.forEach((b) => b.allocatedIds.forEach((q) => byQr.set(q, { model: b.model, brand: b.brand, regId: b.regId, rating: b.rating, iseer: 0, status: "Active", qrBatch: b.id })));
-    return (query: string): Resolved | undefined => {
-      const q = query.trim();
-      return map.get(q) ?? byQr.get(q.toUpperCase()) ?? [...map.values()].find((m) => m.regId.toLowerCase() === q.toLowerCase());
-    };
-  }, [batches, activeModels]);
-}
 
 export function VerificationScreen({ module, screen, mode }: { module: Module; screen: Screen; mode: "public" | "certificate" }) {
-  const resolve = useResolver();
   const [q, setQ] = useState("");
-  const [checked, setChecked] = useState(false);
-  const hit = checked ? resolve(q) : undefined;
+  const [scenario, setScenario] = useState<VerifyScenario | null>(null);
+  const authorised = mode === "certificate";
+
+  function resolve(query: string) {
+    const norm = query.trim().toLowerCase();
+    if (!norm) { setScenario(null); return; }
+    const sc = VERIFY_SCENARIOS.find((s) => s.regId.toLowerCase() === norm && s.id !== "revoked" && s.id !== "ledger-down");
+    setScenario(sc ?? { id: "not-found", label: "Not found", regId: query });
+  }
 
   return (
-    <ScreenChrome module={module} screen={screen} subtitle={mode === "public" ? "Read-only public/mobile authenticity check" : "Certificate hash verification against the ledger"}>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-space-md">
-        <Card title="Lookup">
-          <div className="flex gap-space-sm">
-            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={mode === "public" ? "QR value or Registration ID" : "Certificate / Registration ID"} className="flex-1 py-2.5 px-3 rounded-lg bg-surface-ground font-body-sm text-body-sm outline-none" />
-            <button onClick={() => setChecked(true)} className="px-space-md py-2.5 rounded-lg bg-primary text-on-primary font-label-md text-label-md flex items-center gap-1"><Icon name="search" size={18} /> Verify</button>
+    <ScreenChrome module={module} screen={screen} subtitle={authorised ? "Certificate hash verification against the ledger" : "Read-only public/mobile authenticity check"}>
+      <Card title="Lookup">
+        <div className="flex gap-space-sm">
+          <input value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => e.key === "Enter" && resolve(q)} placeholder={authorised ? "Certificate / Registration ID" : "QR value or Registration ID"} aria-label="Registration ID" className="flex-1 py-2.5 px-3 rounded-lg bg-surface-container-low font-body-sm text-body-sm outline-none" />
+          <button onClick={() => resolve(q)} className="px-space-md py-2.5 rounded-lg bg-primary text-on-primary font-label-md text-label-md flex items-center gap-1"><Icon name="search" size={18} /> Verify</button>
+        </div>
+        <div className="mt-space-sm">
+          <div className="font-label-sm text-label-sm text-on-surface-variant mb-1.5">Demonstration scenarios:</div>
+          <div className="flex flex-wrap gap-1.5">
+            {VERIFY_SCENARIOS.map((s) => (
+              <button key={s.id} type="button" onClick={() => { setQ(s.regId); setScenario(s); }}
+                className={`px-2.5 py-1 rounded-full font-label-sm text-label-sm border transition-colors ${scenario?.id === s.id && scenario?.regId === s.regId ? "bg-primary text-on-primary border-primary" : "bg-surface-container-low text-on-surface border-border-subtle hover:bg-forest-light"}`}>
+                {s.label}
+              </button>
+            ))}
           </div>
-          <p className="font-label-sm text-label-sm text-on-surface-variant mt-space-sm">Try: {APPLIANCES.slice(0, 2).map((a) => a.regId).join("  •  ")}</p>
-        </Card>
-        <Card title="Result">
-          {!checked ? (
-            <p className="font-body-sm text-body-sm text-on-surface-variant">Enter a value to verify.</p>
-          ) : hit ? (
-            <div className="space-y-space-sm">
-              <div className="flex items-center gap-space-sm">
-                <Icon name="verified" size={26} fill className="text-primary" />
-                <div>
-                  <div className="font-title-lg text-title-lg text-on-surface">{hit.brand} {hit.model}</div>
-                  <div className="font-label-sm text-label-sm font-mono text-on-surface-variant">{hit.regId}</div>
-                </div>
-              </div>
-              <div className="flex items-center gap-space-sm"><Stars value={hit.rating} size={18} /> <Status label={hit.status} tone={OK} /></div>
-              {mode === "certificate" && (
-                <div className="bg-forest-light text-forest-dark rounded-lg p-space-sm font-body-sm text-body-sm flex items-center gap-space-sm">
-                  <Icon name="link" size={18} /> Certificate hash anchored on the permissioned ledger{hit.qrBatch ? ` · batch ${hit.qrBatch}` : ""}.
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="bg-error-container text-on-error-container rounded-lg p-space-sm font-body-sm text-body-sm flex items-center gap-space-sm">
-              <Icon name="gpp_bad" size={20} fill /> No matching registration found. Do not trust the label.
-            </div>
-          )}
-        </Card>
-      </div>
+        </div>
+      </Card>
+
+      {scenario && (
+        <div className="mt-space-md">
+          <VerificationResult scenario={scenario} mode={authorised ? "authorised" : "public"} />
+        </div>
+      )}
     </ScreenChrome>
   );
 }
