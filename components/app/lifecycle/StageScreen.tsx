@@ -30,7 +30,7 @@ const VARIANT_COPY: Record<StageVariant, { subtitle: string; primary: string; ic
   label: { subtitle: "Generate label & allocate QR", primary: "Generate label & QR batch", icon: "qr_code_2", note: "Label artwork is hashed and versioned; QR batch bound to the permission." },
 };
 
-export function StageScreen({ module, screen, variant }: { module: Module; screen: Screen; variant: StageVariant }) {
+export function StageScreen({ module, screen, variant, bare = false }: { module: Module; screen: Screen; variant: StageVariant; bare?: boolean }) {
   const stage = VARIANT_STAGE[variant];
   const { apps, appsAtStage, byId, payFee, advance, returnApp, reject, setRating, generateLabel } = useLifecycle();
   const actor = useActor();
@@ -57,8 +57,7 @@ export function StageScreen({ module, screen, variant }: { module: Module; scree
 
   const atStage = selected && selected.stage === stage && selected.stage !== "rejected";
 
-  return (
-    <ScreenChrome module={module} screen={screen} subtitle={copy.subtitle}>
+  const inner = (
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-space-md">
         {/* Queue */}
         <Card title={`Queue (${queue.length})`}>
@@ -168,8 +167,8 @@ export function StageScreen({ module, screen, variant }: { module: Module; scree
           )}
         </div>
       </div>
-    </ScreenChrome>
   );
+  return bare ? inner : <ScreenChrome module={module} screen={screen} subtitle={copy.subtitle}>{inner}</ScreenChrome>;
 }
 
 function RatingPanel({ app }: { app: ModelApplication }) {

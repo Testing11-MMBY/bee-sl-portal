@@ -4,7 +4,8 @@ import { useState } from "react";
 import { Icon } from "@/components/ui/Icon";
 import { Module, Screen } from "@/lib/screens";
 import { Card, ScreenChrome, Status, OK, WARN, BAD } from "@/components/app/ScreenScaffold";
-import { FABRIC_NETWORK, FABRIC_META, FABRIC_TX, FabricTxRow, SIM_LABEL_TEXT } from "@/lib/mock/certificate";
+import { FABRIC_NETWORK, FABRIC_META, FABRIC_TX, FabricTxRow, SIM_LABEL_TEXT, PRIMARY_CERT } from "@/lib/mock/certificate";
+import { FabricTransactionDrawer, ReconciliationSummary, ReconRow } from "./kit";
 
 /* ================================================================== *
  * Fabric & integration monitoring (section 12) — replaces the generic
@@ -19,6 +20,17 @@ export function FabricMonitoring({ module, screen }: { module: Module; screen: S
   const [status, setStatus] = useState("all");
   const [event, setEvent] = useState("all");
   const [q, setQ] = useState("");
+  const [selTx, setSelTx] = useState<FabricTxRow | null>(null);
+
+  const RECON = {
+    counts: { portal: 5, confirmed: 4, missing: 1, mismatch: 1, pending: 1, failed: 0, lastRun: "2 min ago" },
+    exceptions: [
+      { label: "Missing ledger record", ref: "BEE/CERT/RAC/2026/10022 · v1", kind: "Portal certificate exists, but no confirmed ledger transaction" },
+      { label: "Hash mismatch", ref: "BEE/CERT/RAC/2026/10077 · v1", kind: "Portal and ledger hashes differ" },
+      { label: "Status lag", ref: `${PRIMARY_CERT.certId} · v2`, kind: "Ledger event exists, but portal status is not updated" },
+      { label: "Premature active", ref: "BEE/CERT/RAC/2026/10041 · v2", kind: "Portal shows Active while transaction is still pending" },
+    ] as ReconRow[],
+  };
 
   const rows = FABRIC_TX.filter((r) =>
     (status === "all" || r.status === status) &&
@@ -100,8 +112,8 @@ export function FabricMonitoring({ module, screen }: { module: Module; screen: S
             </thead>
             <tbody>
               {rows.map((r: FabricTxRow) => (
-                <tr key={r.correlationId} className="border-b border-border-subtle/60 hover:bg-surface-container-low">
-                  <td className="py-2 pr-space-md font-mono text-label-sm text-on-surface-variant whitespace-nowrap">{r.correlationId}</td>
+                <tr key={r.correlationId} onClick={() => setSelTx(r)} className="border-b border-border-subtle/60 hover:bg-surface-container-low cursor-pointer">
+                  <td className="py-2 pr-space-md font-mono text-label-sm text-primary whitespace-nowrap underline decoration-dotted">{r.correlationId}</td>
                   <td className="py-2 pr-space-md font-body-sm text-body-sm text-on-surface whitespace-nowrap">{r.ref}</td>
                   <td className="py-2 pr-space-md font-body-sm text-body-sm text-on-surface">{r.event}</td>
                   <td className="py-2 pr-space-md font-body-sm text-body-sm text-on-surface-variant">{r.version === "—" ? "—" : `v${r.version}`}</td>
@@ -120,7 +132,14 @@ export function FabricMonitoring({ module, screen }: { module: Module; screen: S
             </tbody>
           </table>
         </div>
+        <p className="font-label-sm text-label-sm text-on-surface-variant mt-space-sm">Click a transaction row for full endorsement, block and audit detail.</p>
       </Card>
+
+      <Card title="Portal ↔ ledger reconciliation">
+        <ReconciliationSummary counts={RECON.counts} exceptions={RECON.exceptions} onOpen={() => { /* opens affected cert/tx in a real system */ }} />
+      </Card>
+
+      <FabricTransactionDrawer tx={selTx} onClose={() => setSelTx(null)} />
     </ScreenChrome>
   );
 }

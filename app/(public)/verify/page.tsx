@@ -6,7 +6,26 @@ import { Suspense } from "react";
 import { Icon } from "@/components/ui/Icon";
 import { APPLIANCES, Appliance } from "@/lib/mock/appliances";
 import { VerificationResult } from "@/components/app/blockchain/VerificationResult";
-import { VERIFY_SCENARIOS, VerifyScenario, PRIMARY_CERT } from "@/lib/mock/certificate";
+import { VERIFY_SCENARIOS, VerifyScenario, VerifyOutcome, PRIMARY_CERT } from "@/lib/mock/certificate";
+import { readCertState } from "@/components/app/blockchain/CertificateStore";
+
+/** Live scenario for the demo certificate from the shared store (reflects amend/revoke/ledger status). */
+function scenarioFromStore(): VerifyScenario {
+  const st = readCertState();
+  const base = { regId: PRIMARY_CERT.regId, manufacturer: PRIMARY_CERT.manufacturer, model: PRIMARY_CERT.model, stars: PRIMARY_CERT.stars, validFrom: PRIMARY_CERT.validFrom, validTo: PRIMARY_CERT.validTo };
+  if (!st.ledgerAvailable) return { id: "ledger-down", label: "Ledger unavailable", ...base };
+  const cur = st.versions.find((v) => v.version === st.currentVersion);
+  if (!cur || st.issuance !== "ACTIVE" && st.versions.length === 0) return { id: "not-found", label: "Not issued", regId: PRIMARY_CERT.regId };
+  if (!cur) return { id: "not-found", label: "Not issued", regId: PRIMARY_CERT.regId };
+  const outcome: VerifyOutcome =
+    cur.status === "Revoked" ? "revoked" : cur.status === "Superseded" ? "superseded" :
+    cur.status === "Suspended" ? "suspended" : cur.status === "Expired" ? "expired" : "active";
+  return {
+    ...base, id: outcome, label: cur.status, status: cur.status, version: cur.version,
+    currentHash: cur.hash, ledgerHash: cur.hash,
+    tx: { txId: cur.txId, blockNumber: cur.block, timestamp: cur.ledgerTs, status: "Confirmed" },
+  };
+}
 
 /** deterministic 64-hex pseudo-hash so appliance matches also show ledger proof */
 function pseudoHash(seed: string): string {
@@ -56,7 +75,9 @@ function VerifyInner() {
   function resolve(q: string) {
     const norm = q.trim().toLowerCase();
     if (!norm) { setScenario(null); return; }
-    // known blockchain scenario (exact reg id → the non-revoked default)
+    // the live demo certificate reflects the shared store (amend / revoke / ledger status)
+    if (norm === PRIMARY_CERT.regId.toLowerCase()) { setScenario(scenarioFromStore()); return; }
+    // other reg ids → static demonstration scenarios
     const sc = VERIFY_SCENARIOS.find((s) => s.regId.toLowerCase() === norm && s.id !== "revoked" && s.id !== "ledger-down");
     if (sc) { setScenario(sc); return; }
     // appliance / dynamic model match → synthesise an active result

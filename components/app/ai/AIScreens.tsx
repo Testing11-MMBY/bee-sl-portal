@@ -340,15 +340,15 @@ export function ComplianceRiskScoring({ module, screen }: { module: Module; scre
 type AnomalyType = "Duplicate pattern" | "Quantity deviation" | "Cross-model similarity" | "Period spike";
 
 interface Anomaly {
-  id: string; model: string; type: AnomalyType; confidence: number; period: string;
-  observed: number; expected: number; note: string;
+  id: string; model: string; manufacturer: string; category: string; type: AnomalyType; confidence: number; period: string;
+  observed: number; expected: number; peerAvg: number; execId: string; note: string; records: string[];
 }
 
 const ANOMALIES: Anomaly[] = [
-  { id: "PRD-88213", model: "FrostMax 1.5T (5★)", type: "Period spike", confidence: 92, period: "Q2 FY26", observed: 48200, expected: 12500, note: "286% above trailing 4-quarter mean." },
-  { id: "PRD-88190", model: "CoolWave 1T (4★)", type: "Duplicate pattern", confidence: 88, period: "Q2 FY26", observed: 15000, expected: 15000, note: "Identical serial batch submitted twice." },
-  { id: "PRD-88155", model: "AquaBreeze 2T (3★)", type: "Cross-model similarity", confidence: 76, period: "Q2 FY26", observed: 9800, expected: 6100, note: "Serial ranges overlap a different model family." },
-  { id: "PRD-88122", model: "PolarPro 2T (5★)", type: "Quantity deviation", confidence: 69, period: "Q2 FY26", observed: 300, expected: 8200, note: "96% below expected — possible under-reporting." },
+  { id: "PRD-88213", model: "FrostMax 1.5T (5★)", manufacturer: "Nova Cool Appliances Ltd.", category: "Room Air Conditioner", type: "Period spike", confidence: 92, period: "Q2 FY26", observed: 48200, expected: 12500, peerAvg: 13800, execId: "EXE-2026-0731", note: "286% above trailing 4-quarter mean.", records: ["PROD-Q2-88213", "SER-10016-4xxx"] },
+  { id: "PRD-88190", model: "CoolWave 1T (4★)", manufacturer: "Sunrise Electra Pvt. Ltd.", category: "Room Air Conditioner", type: "Duplicate pattern", confidence: 88, period: "Q2 FY26", observed: 15000, expected: 15000, peerAvg: 9200, execId: "EXE-2026-0731", note: "Identical serial batch submitted twice.", records: ["PROD-Q2-88190", "PROD-Q1-88041"] },
+  { id: "PRD-88155", model: "AquaBreeze 2T (3★)", manufacturer: "GreenVolt Industries", category: "Room Air Conditioner", type: "Cross-model similarity", confidence: 76, period: "Q2 FY26", observed: 9800, expected: 6100, peerAvg: 6400, execId: "EXE-2026-0731", note: "Serial ranges overlap a different model family.", records: ["PROD-Q2-88155", "SER-10041-2xxx"] },
+  { id: "PRD-88122", model: "PolarPro 2T (5★)", manufacturer: "PolarPro Appliances", category: "Room Air Conditioner", type: "Quantity deviation", confidence: 69, period: "Q2 FY26", observed: 300, expected: 8200, peerAvg: 7600, execId: "EXE-2026-0731", note: "96% below expected — possible under-reporting.", records: ["PROD-Q2-88122"] },
 ];
 
 const ANO_TONE: Record<AnomalyType, string> = {
@@ -358,10 +358,28 @@ const ANO_TONE: Record<AnomalyType, string> = {
   "Quantity deviation": "bg-secondary-fixed text-on-secondary-fixed",
 };
 
+interface AnomalyOutcome { status: string; officer: string; timestamp: string; reason: string; assignee: string; dueDate: string; auditRef: string; linkedCase?: string; }
+
 export function ProductionAnomalyDetection({ module, screen }: { module: Module; screen: Screen }) {
+  const { role } = useRole();
+  const officer = roleByKey(role);
   const [selId, setSelId] = useState(ANOMALIES[0].id);
+  const [reason, setReason] = useState("");
+  const [assignee, setAssignee] = useState("IAME North — A. Kapoor");
+  const [dueDate, setDueDate] = useState("30 Sep 2026");
+  const [outcome, setOutcome] = useState<AnomalyOutcome | null>(null);
   const sel = ANOMALIES.find((a) => a.id === selId)!;
-  const max = Math.max(sel.observed, sel.expected);
+  const max = Math.max(sel.observed, sel.expected, sel.peerAvg);
+
+  function select(id: string) { setSelId(id); setReason(""); setOutcome(null); }
+  function dispatch(status: string) {
+    if (!reason.trim()) return;
+    setOutcome({
+      status, officer: officer.name, timestamp: new Date().toLocaleString("en-IN"), reason: reason.trim(),
+      assignee, dueDate, auditRef: `AUD-ANOM-${sel.id}-${Math.floor(Math.random() * 9000 + 1000)}`,
+      linkedCase: status === "Confirmed exception" ? "ENF-2026-0431 (draft)" : status === "Assigned for investigation" ? "INV-2026-0208" : undefined,
+    });
+  }
 
   return (
     <ScreenChrome module={module} screen={screen} subtitle="Anomaly queue · model anomaly-iforest v1.8">
@@ -376,7 +394,7 @@ export function ProductionAnomalyDetection({ module, screen }: { module: Module;
               {ANOMALIES.map((a) => {
                 const active = a.id === selId;
                 return (
-                  <button key={a.id} type="button" onClick={() => setSelId(a.id)}
+                  <button key={a.id} type="button" onClick={() => select(a.id)}
                     className={`w-full text-left p-space-sm rounded-lg transition-colors ${active ? "bg-primary-container/40 ring-1 ring-primary" : "bg-surface-container-low hover:bg-surface-container"}`}>
                     <div className="flex items-center justify-between gap-2">
                       <span className="font-label-sm text-label-sm text-on-surface-variant">{a.id}</span>
@@ -395,32 +413,61 @@ export function ProductionAnomalyDetection({ module, screen }: { module: Module;
         <div className="lg:col-span-3 space-y-space-md">
           <Card title={`Record ${sel.id}`} action={<span className={`px-2 py-0.5 rounded-full font-label-sm text-label-sm font-semibold ${ANO_TONE[sel.type]}`}>{sel.type}</span>}>
             <div className="font-title-md text-title-md text-on-surface">{sel.model}</div>
-            <div className="font-label-sm text-label-sm text-on-surface-variant mb-space-md">{sel.period} · statistical confidence {sel.confidence}%</div>
+            <div className="font-label-sm text-label-sm text-on-surface-variant mb-space-md">{sel.manufacturer} · statistical confidence {sel.confidence}%</div>
+            <div className="grid grid-cols-2 gap-x-space-md gap-y-1.5 mb-space-md">
+              <MiniKV k="Manufacturer" v={sel.manufacturer} />
+              <MiniKV k="Appliance category" v={sel.category} />
+              <MiniKV k="Reporting period" v={sel.period} />
+              <MiniKV k="Anomaly type" v={sel.type} />
+              <MiniKV k="Detection execution ID" v={sel.execId} />
+              <MiniKV k="Model / version" v="anomaly-iforest v1.8" />
+            </div>
 
-            <div className="font-label-md text-label-md text-on-surface font-semibold mb-space-sm">Observed vs expected (historical)</div>
+            <div className="font-label-md text-label-md text-on-surface font-semibold mb-space-sm">Observed vs expected vs peers</div>
             <div className="space-y-space-sm">
               <Bar label="This submission" value={sel.observed} max={max} tone="bg-error" />
-              <Bar label="Expected (4-qtr mean)" value={sel.expected} max={max} tone="bg-primary" />
+              <Bar label="Expected (4-qtr trend)" value={sel.expected} max={max} tone="bg-primary" />
+              <Bar label="Category peer average" value={sel.peerAvg} max={max} tone="bg-tertiary" />
             </div>
             <div className="flex items-start gap-space-sm bg-surface-container-low rounded-lg p-space-sm mt-space-md">
               <Icon name="lightbulb" size={16} className="text-solar-gold-dark shrink-0 mt-0.5" />
               <p className="font-body-sm text-body-sm text-on-surface">{sel.note}</p>
             </div>
-          </Card>
-
-          <Card title="Disposition">
-            <div className="flex flex-wrap gap-space-sm">
-              <button type="button" className="flex items-center gap-1.5 bg-primary text-on-primary font-label-md text-label-md font-semibold py-2 px-space-md rounded-lg hover:bg-forest-dark">
-                <Icon name="person_search" size={16} /> Assign for investigation
-              </button>
-              <button type="button" className="flex items-center gap-1.5 bg-forest-light text-forest-dark font-label-md text-label-md font-semibold py-2 px-space-md rounded-lg hover:bg-tertiary hover:text-on-primary">
-                <Icon name="check_circle" size={16} /> Mark valid
-              </button>
-              <button type="button" className="flex items-center gap-1.5 bg-error-container text-on-error-container font-label-md text-label-md font-semibold py-2 px-space-md rounded-lg hover:bg-error hover:text-on-error">
-                <Icon name="report" size={16} /> Confirm exception
-              </button>
+            <div className="flex flex-wrap gap-1.5 mt-space-sm">
+              <span className="font-label-sm text-label-sm text-on-surface-variant">Affected records:</span>
+              {sel.records.map((r) => <button key={r} type="button" className="font-label-sm text-label-sm text-primary bg-surface-container-low px-2 py-0.5 rounded hover:underline">{r}</button>)}
             </div>
           </Card>
+
+          {outcome ? (
+            <Card title="Disposition recorded" action={<Status label={outcome.status} tone={outcome.status.includes("exception") ? BAD : outcome.status.includes("valid") ? OK : WARN} />}>
+              <div className="grid grid-cols-2 gap-1.5">
+                <MiniKV k="Officer" v={outcome.officer} />
+                <MiniKV k="Timestamp" v={outcome.timestamp} />
+                <MiniKV k="Assignee" v={outcome.assignee} />
+                <MiniKV k="Due date" v={outcome.dueDate} />
+                <MiniKV k="Investigation status" v={outcome.status} />
+                <MiniKV k="Audit reference" v={outcome.auditRef} />
+              </div>
+              <div className="mt-space-sm"><div className="font-label-sm text-label-sm text-on-surface-variant">Reason</div><div className="font-body-sm text-body-sm text-on-surface">{outcome.reason}</div></div>
+              {outcome.linkedCase && <p className="font-label-sm text-label-sm text-on-surface mt-space-sm flex items-center gap-1"><Icon name="link" size={14} className="text-primary" /> Linked case: <span className="font-semibold">{outcome.linkedCase}</span></p>}
+              <button type="button" onClick={() => setOutcome(null)} className="mt-space-sm font-label-sm text-label-sm text-primary hover:underline">Record a different disposition</button>
+            </Card>
+          ) : (
+            <Card title="Disposition">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-space-sm mb-space-sm">
+                <div><label className="font-label-sm text-label-sm text-on-surface-variant">Assignee</label><input value={assignee} onChange={(e) => setAssignee(e.target.value)} className="w-full mt-0.5 px-space-sm py-2 rounded-lg bg-surface-container-low font-body-sm text-body-sm outline-none" /></div>
+                <div><label className="font-label-sm text-label-sm text-on-surface-variant">Due date</label><input value={dueDate} onChange={(e) => setDueDate(e.target.value)} className="w-full mt-0.5 px-space-sm py-2 rounded-lg bg-surface-container-low font-body-sm text-body-sm outline-none" /></div>
+              </div>
+              <textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Disposition reason (required, recorded in audit trail)…" rows={2} className="w-full px-space-sm py-2 rounded-lg bg-surface-container-low font-body-sm text-body-sm outline-none resize-none" />
+              <div className="flex flex-wrap gap-space-sm mt-space-sm">
+                <button type="button" disabled={!reason.trim()} onClick={() => dispatch("Assigned for investigation")} className={`flex items-center gap-1.5 font-label-md text-label-md font-semibold py-2 px-space-md rounded-lg ${reason.trim() ? "bg-primary text-on-primary hover:bg-forest-dark" : "bg-surface-container text-on-surface-variant cursor-not-allowed"}`}><Icon name="person_search" size={16} /> Assign for investigation</button>
+                <button type="button" disabled={!reason.trim()} onClick={() => dispatch("Marked valid")} className={`flex items-center gap-1.5 font-label-md text-label-md font-semibold py-2 px-space-md rounded-lg ${reason.trim() ? "bg-forest-light text-forest-dark hover:bg-tertiary hover:text-on-primary" : "bg-surface-container text-on-surface-variant cursor-not-allowed"}`}><Icon name="check_circle" size={16} /> Mark valid</button>
+                <button type="button" disabled={!reason.trim()} onClick={() => dispatch("Confirmed exception")} className={`flex items-center gap-1.5 font-label-md text-label-md font-semibold py-2 px-space-md rounded-lg ${reason.trim() ? "bg-error-container text-on-error-container hover:bg-error hover:text-on-error" : "bg-surface-container text-on-surface-variant cursor-not-allowed"}`}><Icon name="report" size={16} /> Confirm exception</button>
+              </div>
+              {!reason.trim() && <p className="font-label-sm text-label-sm text-on-surface-variant mt-1">A reason is required for every disposition.</p>}
+            </Card>
+          )}
         </div>
       </div>
     </ScreenChrome>

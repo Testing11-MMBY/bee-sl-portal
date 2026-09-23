@@ -118,7 +118,9 @@ function StatusChip({ id, status }: { id: string; status?: string }) {
   const tone = id === "active" ? "bg-forest-light text-forest-dark"
     : id === "revoked" || id === "mismatch" ? "bg-error-container text-on-error-container"
     : "bg-solar-gold-light text-solar-gold-dark";
-  return <span className={`px-2 py-0.5 rounded-full font-label-sm text-label-sm font-bold ${tone}`}>{status ?? id}</span>;
+  // A tampered certificate must never show an "Active"/verified badge.
+  const label = id === "mismatch" ? "Suspected Tampering" : (status ?? id);
+  return <span className={`px-2 py-0.5 rounded-full font-label-sm text-label-sm font-bold ${tone}`}>{label}</span>;
 }
 
 function Fact({ k, v }: { k: string; v: string }) {

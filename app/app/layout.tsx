@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { RoleProvider } from "@/components/app/RoleContext";
 import { LifecycleProvider } from "@/components/app/LifecycleStore";
 import { QRProvider } from "@/components/app/QRStore";
+import { CertProvider } from "@/components/app/blockchain/CertificateStore";
 import { LangProvider } from "@/components/i18n/LangProvider";
 import { AppSidebar } from "@/components/app/AppSidebar";
 import { AppTopbar } from "@/components/app/AppTopbar";
@@ -18,6 +19,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     <RoleProvider>
       <LifecycleProvider>
         <QRProvider>
+        <CertProvider>
         <div className="h-screen flex overflow-hidden bg-surface-ground">
         {/* Desktop sidebar */}
         <aside className="hidden lg:block w-72 shrink-0">
@@ -42,6 +44,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </main>
         </div>
         </div>
+        </CertProvider>
         </QRProvider>
       </LifecycleProvider>
     </RoleProvider>

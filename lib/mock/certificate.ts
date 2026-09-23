@@ -11,7 +11,7 @@
 export const ADVISORY_TEXT =
   "AI output is advisory decision support. No regulatory, financial or enforcement action is performed without an authorised human decision.";
 
-export const SIM_LABEL_TEXT = "Simulated Fabric transaction for prototype demonstration.";
+export const SIM_LABEL_TEXT = "Simulated Hyperledger Fabric transaction for prototype demonstration.";
 
 export const FABRIC_META = {
   network: "bee-sl-fabric (permissioned)",
@@ -75,7 +75,7 @@ export interface Certificate {
 export const PRIMARY_CERT: Certificate = {
   certId: "BEE/CERT/RAC/2026/10016",
   regId: "BEE/RAC/2026/10016",
-  appId: "APP-2026-04821",
+  appId: "APP-2026-05016",
   manufacturer: "Nova Cool Appliances Ltd.",
   model: "FrostMax 1.5T",
   category: "Room ACs",
@@ -252,3 +252,35 @@ export const FABRIC_TX: FabricTxRow[] = [
   { correlationId: "COR-89044", ref: "BEE/CERT/RAC/2026/10022", event: "Issued", version: 1, txId: "092a3b4c5d6e7f80912a3b4c5d6e7f8091a2b3c4d5e6f7081920a3b4c5d6e7f8", status: "Retrying", block: "—", submitted: "2026-10-19T10:20:00Z", confirmed: "—", retries: 2, error: "ENDORSEMENT_POLICY_FAILURE: peer1 unavailable" },
   { correlationId: "COR-89050", ref: "BEE/CERT/RAC/2026/10011", event: "Renewed", version: 2, txId: "2a3b4c5d6e7f80912a3b4c5d6e7f8091a2b3c4d5e6f7081920a3b4c5d6e7f809", status: "Confirmed", block: 185741, submitted: "2026-10-19T11:02:00Z", confirmed: "2026-10-19T11:02:12Z", retries: 0, error: "—" },
 ];
+
+/* ------------------------------------------------------------------ *
+ * Shared status configuration — single source of truth for badges.
+ * ------------------------------------------------------------------ */
+export const CERT_STATUS_META: Record<string, { label: string; tone: string }> = {
+  DRAFT: { label: "Draft", tone: "bg-surface-container text-on-surface-variant" },
+  CERTIFICATE_GENERATED: { label: "Certificate generated", tone: "bg-navy-subtle text-navy-dark" },
+  HASH_CALCULATED: { label: "Hash calculated", tone: "bg-navy-subtle text-navy-dark" },
+  LEDGER_SUBMITTED: { label: "Ledger submitted", tone: "bg-solar-gold-light text-solar-gold-dark" },
+  RETRYING: { label: "Retrying", tone: "bg-solar-gold-light text-solar-gold-dark" },
+  FAILED: { label: "Failed — retry required", tone: "bg-error-container text-on-error-container" },
+  LEDGER_CONFIRMED: { label: "Anchored & confirmed", tone: "bg-forest-light text-forest-dark" },
+  ACTIVE: { label: "Active", tone: "bg-forest-light text-forest-dark" },
+  Active: { label: "Active", tone: "bg-forest-light text-forest-dark" },
+  Amended: { label: "Amended", tone: "bg-forest-light text-forest-dark" },
+  Superseded: { label: "Superseded", tone: "bg-surface-container text-on-surface-variant" },
+  Suspended: { label: "Suspended", tone: "bg-solar-gold-light text-solar-gold-dark" },
+  Revoked: { label: "Revoked", tone: "bg-error-container text-on-error-container" },
+  Expired: { label: "Expired", tone: "bg-surface-container text-on-surface-variant" },
+  Reinstated: { label: "Reinstated", tone: "bg-forest-light text-forest-dark" },
+  Renewed: { label: "Renewed", tone: "bg-forest-light text-forest-dark" },
+  "Rating changed": { label: "Rating changed", tone: "bg-solar-gold-light text-solar-gold-dark" },
+};
+
+export type IssuanceState =
+  | "DRAFT" | "CERTIFICATE_GENERATED" | "HASH_CALCULATED" | "LEDGER_SUBMITTED"
+  | "RETRYING" | "FAILED" | "LEDGER_CONFIRMED" | "ACTIVE";
+
+/** Correlation id for a version, from the Fabric tx log (cross-screen consistency). */
+export function correlationForVersion(v: number): string {
+  return FABRIC_TX.find((t) => t.ref === PRIMARY_CERT.certId && t.version === v)?.correlationId ?? `COR-${88000 + v}`;
+}
