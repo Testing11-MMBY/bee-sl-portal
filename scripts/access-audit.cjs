@@ -16,6 +16,7 @@ const { MODULES, canRoleSee } = require(B + "/screens.js");
 const STANDALONE = new Set([
   "/app", "/app/screens", "/app/ai", "/app/enforcement/case",
   "/app/helpdesk/workspace", "/app/registrations/record", "/app/qr/batch",
+  "/app/identity/access-management", "/app/workflow/my-approvals",
 ]);
 const SCREEN_PATHS = new Set(MODULES.flatMap((m) => m.screens.map((s) => `/app/${m.id}/${s.id}`)));
 function routeExists(href) {

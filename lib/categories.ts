@@ -38,7 +38,7 @@ export const CATEGORIES: Category[] = [
     items: [
       { en: "Dashboard", hi: "डैशबोर्ड", href: "/app", icon: "dashboard" },
       { en: "My work", hi: "मेरा कार्य", href: "/app/workflow/personal-inbox", icon: "inbox" },
-      { en: "Approvals", hi: "अनुमोदन", href: "/app/workflow/approval-note", icon: "task_alt" },
+      { en: "Approvals", hi: "अनुमोदन", href: "/app/workflow/my-approvals", icon: "task_alt" },
       { en: "SLA and escalations", hi: "एसएलए एवं एस्केलेशन", href: "/app/workflow/escalation-dashboard", icon: "priority_high" },
     ],
   },
@@ -132,7 +132,7 @@ export const CATEGORIES: Category[] = [
     hi: "प्रशासन",
     icon: "settings",
     items: [
-      { en: "Users, roles and delegation", hi: "उपयोगकर्ता, भूमिका एवं प्रत्यायोजन", href: "/app/identity/role-assignment", icon: "manage_accounts" },
+      { en: "Users, roles and delegation", hi: "उपयोगकर्ता, भूमिका एवं प्रत्यायोजन", href: "/app/identity/access-management", icon: "manage_accounts" },
       { en: "Master data", hi: "मास्टर डेटा", href: "/app/administration/appliance-master", icon: "database" },
       { en: "Rules and formulas", hi: "नियम एवं सूत्र", href: "/app/administration/rating-formula", icon: "functions" },
       { en: "Workflow and SLA configuration", hi: "कार्यप्रवाह एवं एसएलए कॉन्फ़िग", href: "/app/administration/workflow-configuration", icon: "account_tree" },
