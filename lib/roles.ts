@@ -3,17 +3,29 @@
  * Order here is the canonical order used by every screen's permission tuple.
  */
 export const ROLES = [
-  { key: "admin", short: "BEE Admin", name: "BEE Administrator" },
-  { key: "programme", short: "Programme", name: "Programme Officer" },
-  { key: "reviewer", short: "Reviewer", name: "Reviewer & Approver" },
-  { key: "director", short: "Director", name: "Director" },
-  { key: "secretary", short: "Secretary", name: "Secretary" },
-  { key: "finance", short: "Finance", name: "BEE Finance" },
-  { key: "helpdesk", short: "Helpdesk", name: "Helpdesk Agent" },
-  { key: "auditor", short: "Auditor", name: "Auditor" },
+  // Internal BEE / control roles — indices 0–7 map to the Annex A.1 permission
+  // tuples (keep these first so existing 8-cell perms stay aligned).
+  { key: "admin", short: "BEE Admin", name: "BEE Administrator", kind: "internal" },
+  { key: "programme", short: "Programme", name: "Programme Officer", kind: "internal" },
+  { key: "reviewer", short: "Reviewer", name: "Reviewer & Approver", kind: "internal" },
+  { key: "director", short: "Director", name: "Director", kind: "internal" },
+  { key: "secretary", short: "Secretary", name: "Secretary", kind: "internal" },
+  { key: "finance", short: "Finance", name: "BEE Finance", kind: "internal" },
+  { key: "helpdesk", short: "Helpdesk", name: "Helpdesk Agent", kind: "internal" },
+  { key: "auditor", short: "Auditor", name: "Auditor", kind: "internal" },
+  // External partner roles — scoped to their own organisation / assignments.
+  // They get no internal-screen access by default (perms fall through to "—").
+  { key: "manufacturer", short: "Manufacturer", name: "Manufacturer", kind: "external" },
+  { key: "agency", short: "Agency", name: "Registered Agency", kind: "external" },
+  { key: "iame", short: "IAME", name: "IAME (Independent Assessor)", kind: "external" },
+  { key: "sda", short: "SDA", name: "State Designated Agency", kind: "external" },
+  { key: "laboratory", short: "Laboratory", name: "Testing Laboratory", kind: "external" },
 ] as const;
 
 export type RoleKey = (typeof ROLES)[number]["key"];
+export type RoleKind = (typeof ROLES)[number]["kind"];
+
+export const isExternalRole = (key: string) => ROLES.find((r) => r.key === key)?.kind === "external";
 
 export const ROLE_ORDER: RoleKey[] = ROLES.map((r) => r.key) as RoleKey[];
 

@@ -194,6 +194,13 @@ export const DICT: Record<string, Entry> = {
   "role.finance": { en: "BEE Finance", hi: "बीईई वित्त" },
   "role.helpdesk": { en: "Helpdesk Agent", hi: "हेल्पडेस्क एजेंट" },
   "role.auditor": { en: "Auditor", hi: "अंकेक्षक" },
+  "role.manufacturer": { en: "Manufacturer", hi: "निर्माता" },
+  "role.agency": { en: "Registered Agency", hi: "पंजीकृत एजेंसी" },
+  "role.iame": { en: "IAME (Assessor)", hi: "आईएएमई (मूल्यांकनकर्ता)" },
+  "role.sda": { en: "State Designated Agency", hi: "राज्य नामित एजेंसी" },
+  "role.laboratory": { en: "Testing Laboratory", hi: "परीक्षण प्रयोगशाला" },
+  "role.external": { en: "External partner", hi: "बाहरी भागीदार" },
+  "role.internal": { en: "BEE / control", hi: "बीईई / नियंत्रण" },
 
   // Accessibility toolbar
   "a11y.title": { en: "Accessibility", hi: "सुगम्यता" },

@@ -6,6 +6,7 @@ import { RoleProvider } from "@/components/app/RoleContext";
 import { LifecycleProvider } from "@/components/app/LifecycleStore";
 import { QRProvider } from "@/components/app/QRStore";
 import { CertProvider } from "@/components/app/blockchain/CertificateStore";
+import { RouteGuard } from "@/components/app/RouteGuard";
 import { LangProvider } from "@/components/i18n/LangProvider";
 import { AppSidebar } from "@/components/app/AppSidebar";
 import { AppTopbar } from "@/components/app/AppTopbar";
@@ -40,7 +41,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <div className="flex-1 flex flex-col min-w-0">
           <AppTopbar onMenu={() => setMobileOpen(true)} />
           <main className="flex-1 overflow-y-auto app-scroll">
-            <div key={pathname} className="screen-enter">{children}</div>
+            <div key={pathname} className="screen-enter"><RouteGuard>{children}</RouteGuard></div>
           </main>
         </div>
         </div>

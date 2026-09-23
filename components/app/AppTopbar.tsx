@@ -49,9 +49,16 @@ export function AppTopbar({ onMenu }: { onMenu?: () => void }) {
             className="bg-transparent outline-none font-label-md text-label-md text-forest-dark font-semibold cursor-pointer"
             aria-label="Active role"
           >
-            {ROLES.map((r) => (
-              <option key={r.key} value={r.key}>{t(`role.${r.key}`)} ({countForRole(r.key)})</option>
-            ))}
+            <optgroup label={t("role.internal")}>
+              {ROLES.filter((r) => r.kind === "internal").map((r) => (
+                <option key={r.key} value={r.key}>{t(`role.${r.key}`)} ({countForRole(r.key)})</option>
+              ))}
+            </optgroup>
+            <optgroup label={t("role.external")}>
+              {ROLES.filter((r) => r.kind === "external").map((r) => (
+                <option key={r.key} value={r.key}>{t(`role.${r.key}`)} · scoped</option>
+              ))}
+            </optgroup>
           </select>
         </div>
 

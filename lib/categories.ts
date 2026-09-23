@@ -163,6 +163,7 @@ export const CATEGORIES: Category[] = [
  * console maps the remaining control roles as below.
  */
 export const ROLE_CATEGORIES: Record<RoleKey, string[]> = {
+  // Internal BEE roles
   admin: ["home", "administration", "audit", "insights"],
   programme: ["home", "registrations", "labels-production", "compliance", "insights"],
   reviewer: ["home", "registrations", "labels-production", "compliance", "insights"],
@@ -171,12 +172,32 @@ export const ROLE_CATEGORIES: Record<RoleKey, string[]> = {
   finance: ["home", "finance", "registrations", "insights"],
   helpdesk: ["home", "support"],
   auditor: ["home", "audit", "insights"],
+  // External partner roles — scoped to their own organisation / assignments.
+  manufacturer: ["home", "registrations", "labels-production", "finance", "support"],
+  agency: ["home", "registrations", "support"],
+  iame: ["home", "registrations", "compliance", "support"],
+  sda: ["home", "compliance", "insights", "support"],
+  laboratory: ["home", "compliance", "support"],
 };
 
 /** Categories visible to a role, in canonical order. */
 export function categoriesForRole(role: RoleKey): Category[] {
   const allowed = ROLE_CATEGORIES[role] ?? CATEGORIES.map((c) => c.id);
   return CATEGORIES.filter((c) => allowed.includes(c.id));
+}
+
+/**
+ * Single access decision for a console path — the same policy the sidebar,
+ * the route guard and the tests use. Default deny: an unknown path or a
+ * category the role is not granted is refused.
+ */
+export function canRoleAccessPath(role: RoleKey, pathname: string): boolean {
+  const allowed = ROLE_CATEGORIES[role] ?? [];
+  // Console shell + dev catalogue are always reachable once authenticated.
+  if (pathname === "/app" || pathname === "/app/screens") return true;
+  const cat = categoryForPath(pathname);
+  if (!cat) return false;              // unmapped protected path → deny
+  return allowed.includes(cat.id);
 }
 
 /** Which category a given /app path belongs to (for active-state + auto-open). */
