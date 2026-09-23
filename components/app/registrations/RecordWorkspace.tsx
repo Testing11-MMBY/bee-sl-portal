@@ -116,7 +116,8 @@ const DOC_TONE: Record<Doc["status"], string> = { Verified: OK, Pending: WARN, R
 const TYPE_ICON: Record<RecType, string> = { Model: "label", Agency: "domain", Brand: "sell" };
 
 export default function RecordWorkspace() {
-  const [recId, setRecId] = useState(RECORDS[0].id);
+  // Reached from "Agency registrations" — default to an agency record.
+  const [recId, setRecId] = useState((RECORDS.find((r) => r.type === "Agency") ?? RECORDS[0]).id);
   const [tab, setTab] = useState("overview");
   const r = RECORDS.find((x) => x.id === recId)!;
 

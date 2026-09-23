@@ -81,9 +81,11 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void }) {
           })}
         </div>
 
-        <div className="mt-space-sm pt-space-sm border-t border-white/10">
-          <SidebarLink href="/app/screens" icon="apps" label={t("app.allScreens")} active={pathname === "/app/screens"} onNavigate={onNavigate} />
-        </div>
+        {process.env.NODE_ENV !== "production" && (
+          <div className="mt-space-sm pt-space-sm border-t border-white/10">
+            <SidebarLink href="/app/screens" icon="apps" label={`${t("app.allScreens")} · dev`} active={pathname === "/app/screens"} onNavigate={onNavigate} />
+          </div>
+        )}
       </div>
 
       <Link href="/" className="flex items-center gap-space-sm px-space-md py-space-sm border-t border-white/10 text-forest-light/80 hover:text-on-primary font-label-md text-label-md shrink-0" onClick={onNavigate}>
