@@ -173,10 +173,10 @@ export default function RecordWorkspace() {
             const done = i < r.stageIndex, active = i === r.stageIndex;
             return (
               <div key={s} className="flex items-center gap-1 shrink-0">
-                <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full font-label-sm text-label-sm ${active ? "bg-primary text-on-primary font-semibold" : done ? "bg-forest-light text-forest-dark" : "bg-surface-container text-on-surface-variant"}`}>
-                  <Icon name={done ? "check" : active ? "radio_button_checked" : "radio_button_unchecked"} size={14} /> {s}
+                <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full font-label-sm text-label-sm ${active ? "bg-primary text-on-primary font-semibold" : done ? "bg-success-light text-success font-medium" : "bg-surface-container text-on-surface-variant"}`}>
+                  <Icon name={done ? "check_circle" : active ? "radio_button_checked" : "radio_button_unchecked"} size={14} fill={done} /> {s}
                 </div>
-                {i < r.stages.length - 1 && <span className={`w-4 h-px ${done ? "bg-primary" : "bg-border-strong"}`} />}
+                {i < r.stages.length - 1 && <span className={`w-4 h-px ${done ? "bg-success" : "bg-border-strong"}`} />}
               </div>
             );
           })}

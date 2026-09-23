@@ -44,14 +44,14 @@ export function StageStepper({ app }: { app: ModelApplication }) {
                 active
                   ? "bg-primary text-on-primary font-semibold"
                   : done
-                    ? "bg-forest-light text-forest-dark"
+                    ? "bg-success-light text-success font-medium"
                     : "bg-surface-container text-on-surface-variant"
               }`}
             >
-              <Icon name={done ? "check" : active ? "radio_button_checked" : "radio_button_unchecked"} size={14} />
+              <Icon name={done ? "check_circle" : active ? "radio_button_checked" : "radio_button_unchecked"} size={14} fill={done} />
               {STAGE_META[s].short}
             </div>
-            {i < STAGE_ORDER.length - 1 && <span className={`w-4 h-px ${done ? "bg-primary" : "bg-border-strong"}`} />}
+            {i < STAGE_ORDER.length - 1 && <span className={`w-4 h-px ${done ? "bg-success" : "bg-border-strong"}`} />}
           </div>
         );
       })}

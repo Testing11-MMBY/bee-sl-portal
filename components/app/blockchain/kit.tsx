@@ -50,7 +50,7 @@ export function IssuanceProgress({ state, error }: { state: IssuanceState; error
         return (
           <div key={st.key} className={`flex items-start gap-space-sm p-space-sm rounded-lg ${active && !isSubmitErr ? "bg-primary-container/30" : isSubmitErr ? "bg-error-container/40" : ""}`}>
             <Icon name={isSubmitErr ? "error" : done ? "check_circle" : active ? st.icon : "radio_button_unchecked"} size={18}
-              className={isSubmitErr ? "text-error" : done ? "text-tertiary" : active ? "text-primary" : "text-outline"} fill={done || isSubmitErr} />
+              className={isSubmitErr ? "text-error" : done ? "text-success" : active ? "text-primary" : "text-outline"} fill={done || isSubmitErr} />
             <div className="flex-1">
               <div className={`font-label-md text-label-md ${done || active ? "text-on-surface font-semibold" : "text-on-surface-variant"}`}>{st.label}</div>
               {isSubmitErr && error && <div className="font-label-sm text-label-sm text-error">{error.code}: {error.message} · retry {error.retries}</div>}

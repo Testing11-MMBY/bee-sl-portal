@@ -49,6 +49,11 @@ const config: Config = {
         "primary-fixed-dim": "#9dbdec",
         "forest-light": "#E7EFFB",
         "secondary-fixed-dim": "#adc7f7",
+        // success / completed (green) — the blue palette has no green, so
+        // "done" states use these explicitly.
+        success: "#1c7c4a",
+        "success-light": "#e2f3e8",
+        "on-success": "#ffffff",
         error: "#ba1a1a",
         "navy-dark": "#0F172A",
         "forest-dark": "#14315E",
