@@ -159,7 +159,8 @@ export function CertificateWorkspace() {
           <Card title="Certificate & QR activation" action={<CertificateStatusBadge status={active ? "ACTIVE" : "DRAFT"} />}>
             {active ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-space-md">
-                <KV k="Certificate status" v="Active" />
+                <KV k="Status at activation" v="Active" />
+                <KV k="Current lifecycle status" v={current?.status ?? "Active"} />
                 <KV k="QR batch ID" v={state.qrBatchId} />
                 <KV k="QR allocation" v={fmt(state.stages.activatedAt)} />
                 <KV k="Activated at" v={fmt(state.stages.activatedAt)} />

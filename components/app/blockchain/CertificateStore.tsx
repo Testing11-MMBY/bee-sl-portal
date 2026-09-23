@@ -15,7 +15,7 @@ import {
  * SIMULATED.
  * ================================================================== */
 
-const KEY = "bee-cert-state-v1";
+const KEY = "bee-cert-state-v2";
 
 export interface CertVersionState {
   version: number; event: CertEvent; status: LifecycleStatus; effectiveDate: string;
@@ -55,8 +55,11 @@ export const INITIAL: CertState = {
     submittedAt: "2026-09-20T06:41:58Z", confirmedAt: "2026-09-20T06:42:11Z", activatedAt: "2026-09-20T06:42:20Z",
   },
   error: null,
-  versions: [seed(0, "Active")],
-  currentVersion: 1,
+  // Default seed is the full lifecycle: v1 Issued → v2 Amended → v3 Revoked.
+  // Every screen shows the complete, consistent journey out of the box;
+  // "Reset" then re-runs the issuance interactively for a live demo.
+  versions: [seed(0, "Superseded"), seed(1, "Superseded"), seed(2, "Revoked")],
+  currentVersion: 3,
   ledgerAvailable: true,
   qrBatchId: "QRB-2026-0731",
   pending: null,
