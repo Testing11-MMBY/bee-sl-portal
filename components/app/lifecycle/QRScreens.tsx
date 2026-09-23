@@ -168,7 +168,7 @@ export function BatchFileDownload({ module, screen }: { module: Module; screen: 
             b.model,
             b.allocatedIds.length.toLocaleString(),
             <span key="c" className="font-mono text-on-surface-variant">{b.id.replace(/\D/g, "")}A{b.allocatedIds.length}</span>,
-            <button key="d" onClick={() => download(b)} className="px-2.5 py-1 rounded-lg bg-forest-light text-forest-dark font-label-sm text-label-sm flex items-center gap-1 hover:bg-primary hover:text-on-primary"><Icon name="download" size={14} /> CSV</button>,
+            <button key="d" onClick={() => download(b)} className="px-2.5 py-1 rounded-lg bg-success-light text-success font-label-sm text-label-sm flex items-center gap-1 hover:bg-primary hover:text-on-primary"><Icon name="download" size={14} /> CSV</button>,
           ])}
         />
       </Card>

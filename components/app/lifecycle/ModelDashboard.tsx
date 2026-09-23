@@ -31,7 +31,7 @@ export function ModelDashboard({ module, screen }: { module: Module; screen: Scr
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-space-md">
           <Kpi icon="pending_actions" label="In progress" value={inFlight} tone="text-primary" />
           <Kpi icon="undo" label="Returned" value={returned} tone="text-solar-gold-dark" />
-          <Kpi icon="verified" label="Active permissions" value={active} tone="text-tertiary" />
+          <Kpi icon="verified" label="Active permissions" value={active} tone="text-success" />
           <Kpi icon="inventory_2" label="Total models" value={apps.length} tone="text-secondary" />
         </div>
 

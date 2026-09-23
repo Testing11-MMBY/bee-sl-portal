@@ -122,7 +122,7 @@ export default function QRBatchWorkspace() {
         <div className="space-y-space-md">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-space-md">
             <Stat label="Allocated" value={b.allocated} icon="confirmation_number" tone="text-primary" />
-            <Stat label="Bound to serials" value={b.bound} icon="link" tone="text-tertiary" />
+            <Stat label="Bound to serials" value={b.bound} icon="link" tone="text-success" />
             <Stat label="Printed" value={b.printed} icon="print" tone="text-on-surface" />
             <Stat label="Duplicates" value={b.dupList.length} icon="content_copy" tone={b.dupList.length ? "text-error" : "text-on-surface-variant"} />
           </div>
@@ -151,7 +151,7 @@ export default function QRBatchWorkspace() {
           </Card>
           <Card title="Last upload — validation">
             <div className="space-y-space-sm">
-              <ValRow icon="check_circle" tone="text-tertiary" label="Accepted &amp; bound" value="1,820 rows" />
+              <ValRow icon="check_circle" tone="text-success" label="Accepted &amp; bound" value="1,820 rows" />
               <ValRow icon="content_copy" tone="text-error" label="Duplicates (skipped)" value="3 rows" />
               <ValRow icon="rule" tone="text-solar-gold-dark" label="Format warnings" value="12 rows" />
             </div>
@@ -166,7 +166,7 @@ export default function QRBatchWorkspace() {
       {tab === "duplicates" && (
         <Card title={`Duplicate / exception handling · ${b.dupList.length}`}>
           {b.dupList.length === 0 ? (
-            <div className="flex items-center gap-space-sm text-on-surface-variant"><Icon name="check_circle" size={18} className="text-tertiary" /> <span className="font-body-sm text-body-sm">No duplicates — this batch is clean.</span></div>
+            <div className="flex items-center gap-space-sm text-on-surface-variant"><Icon name="check_circle" size={18} className="text-success" /> <span className="font-body-sm text-body-sm">No duplicates — this batch is clean.</span></div>
           ) : (
             <div className="space-y-1.5">
               {b.dupList.map((d) => (

@@ -84,7 +84,7 @@ export function CertificateLedgerPanel({ cert }: { cert: Certificate }) {
               return (
                 <div key={st.key} className={`flex items-start gap-space-sm p-space-sm rounded-lg ${active ? "bg-primary-container/30" : isFailStep ? "bg-error-container/40" : ""}`}>
                   <Icon name={isFailStep ? "error" : done ? "check_circle" : active ? st.icon : "radio_button_unchecked"} size={18}
-                    className={isFailStep ? "text-error" : done ? "text-tertiary" : active ? "text-primary" : "text-outline"} fill={done || isFailStep} />
+                    className={isFailStep ? "text-error" : done ? "text-success" : active ? "text-primary" : "text-outline"} fill={done || isFailStep} />
                   <div className="flex-1">
                     <div className={`font-label-md text-label-md ${done || active ? "text-on-surface font-semibold" : "text-on-surface-variant"}`}>{st.label}</div>
                     <div className="font-label-sm text-label-sm text-on-surface-variant">{isFailStep ? "Failed — retry required (endorsement policy failure)." : st.detail}</div>
@@ -99,7 +99,7 @@ export function CertificateLedgerPanel({ cert }: { cert: Certificate }) {
             ) : phase < 5 ? (
               <button type="button" onClick={next} className="flex items-center gap-1.5 bg-primary text-on-primary font-label-md text-label-md font-semibold py-2 px-space-md rounded-lg hover:bg-forest-dark"><Icon name="play_arrow" size={16} /> Run next step</button>
             ) : (
-              <span className="flex items-center gap-1.5 font-label-md text-label-md text-tertiary font-semibold"><Icon name="verified" size={18} fill /> Anchored & active</span>
+              <span className="flex items-center gap-1.5 font-label-md text-label-md text-success font-semibold"><Icon name="verified" size={18} fill /> Anchored & active</span>
             )}
             <button type="button" onClick={reset} className="flex items-center gap-1.5 bg-surface-container text-on-surface font-label-md text-label-md py-2 px-space-md rounded-lg hover:bg-forest-light"><Icon name="restart_alt" size={16} /> Reset demo</button>
           </div>
@@ -125,9 +125,9 @@ export function CertificateLedgerPanel({ cert }: { cert: Certificate }) {
         <Card title="What is stored on the ledger">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-space-sm">
             <div>
-              <div className="font-label-sm text-label-sm text-tertiary font-semibold mb-1 flex items-center gap-1"><Icon name="check" size={14} /> On-ledger (minimal)</div>
+              <div className="font-label-sm text-label-sm text-success font-semibold mb-1 flex items-center gap-1"><Icon name="check" size={14} /> On-ledger (minimal)</div>
               <ul className="space-y-0.5 font-label-sm text-label-sm text-on-surface-variant">
-                {["Certificate / permission ID", "Certificate version", "SHA-256 hash", "Issuer", "Issue timestamp", "Lifecycle status", "Previous-version reference", "Transaction metadata"].map((x) => <li key={x} className="flex gap-1"><Icon name="lens" size={7} className="mt-1.5 text-tertiary" />{x}</li>)}
+                {["Certificate / permission ID", "Certificate version", "SHA-256 hash", "Issuer", "Issue timestamp", "Lifecycle status", "Previous-version reference", "Transaction metadata"].map((x) => <li key={x} className="flex gap-1"><Icon name="lens" size={7} className="mt-1.5 text-success" />{x}</li>)}
               </ul>
             </div>
             <div>

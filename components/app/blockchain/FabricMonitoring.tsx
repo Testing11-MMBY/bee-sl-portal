@@ -50,8 +50,8 @@ export function FabricMonitoring({ module, screen }: { module: Module; screen: S
 
       {/* Network + KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-space-md">
-        <KPI label="Fabric network" value={net.status} icon="lan" tone={net.status === "Healthy" ? "text-tertiary" : "text-error"} chip={<Status label={net.status} tone={netTone} />} />
-        <KPI label="Tx success rate" value={`${net.successRate}%`} icon="check_circle" tone="text-tertiary" />
+        <KPI label="Fabric network" value={net.status} icon="lan" tone={net.status === "Healthy" ? "text-success" : "text-error"} chip={<Status label={net.status} tone={netTone} />} />
+        <KPI label="Tx success rate" value={`${net.successRate}%`} icon="check_circle" tone="text-success" />
         <KPI label="Failed (24h)" value={String(net.failed24h)} icon="error" tone="text-error" />
         <KPI label="Pending anchoring" value={String(net.pendingQueue)} icon="hourglass_top" tone="text-solar-gold-dark" />
         <KPI label="Avg ledger response" value={`${net.avgResponseMs} ms`} icon="speed" tone="text-primary" />
@@ -73,14 +73,14 @@ export function FabricMonitoring({ module, screen }: { module: Module; screen: S
             <div className="font-label-sm text-label-sm text-on-surface-variant mb-1.5">Peers</div>
             <div className="flex flex-wrap gap-1.5">
               {net.peers.map((p) => (
-                <span key={p.name} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-forest-light text-forest-dark font-label-sm text-label-sm"><Icon name="circle" size={8} className="text-tertiary" /> {p.name}</span>
+                <span key={p.name} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-success-light text-success font-label-sm text-label-sm"><Icon name="circle" size={8} className="text-success" /> {p.name}</span>
               ))}
             </div>
           </div>
         </Card>
 
         <Card title="Portal ↔ ledger reconciliation">
-          <div className="flex items-center gap-space-sm bg-forest-light text-forest-dark rounded-lg p-space-sm">
+          <div className="flex items-center gap-space-sm bg-success-light text-success rounded-lg p-space-sm">
             <Icon name="sync" size={20} /> <span className="font-body-sm text-body-sm font-medium">{net.reconciliation}</span>
           </div>
           <p className="font-label-sm text-label-sm text-on-surface-variant mt-space-sm">Every certificate event in the portal is expected to have a matching confirmed ledger transaction. Mismatches are surfaced in the failed / retrying rows below.</p>

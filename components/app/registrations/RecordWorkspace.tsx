@@ -245,7 +245,7 @@ export default function RecordWorkspace() {
             <div className="space-y-1.5">
               {r.scrutiny.checklist.map((ch) => (
                 <div key={ch.item} className="flex items-center gap-space-sm font-body-sm text-body-sm text-on-surface">
-                  <Icon name={ch.ok ? "check_circle" : "cancel"} size={18} className={ch.ok ? "text-tertiary" : "text-error"} /> {ch.item}
+                  <Icon name={ch.ok ? "check_circle" : "cancel"} size={18} className={ch.ok ? "text-success" : "text-error"} /> {ch.item}
                 </div>
               ))}
             </div>

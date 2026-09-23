@@ -191,7 +191,7 @@ export default function TicketWorkspace() {
               <button type="button" className="flex items-center gap-1.5 bg-tertiary text-on-primary font-label-md text-label-md font-semibold py-2 px-space-md rounded-lg hover:opacity-90"><Icon name="check_circle" size={16} /> Mark resolved</button>
               <button type="button" className="flex items-center gap-1.5 bg-surface-container text-on-surface font-label-md text-label-md py-2 px-space-md rounded-lg hover:bg-forest-light"><Icon name="lock" size={16} /> Close ticket</button>
               <span className="ml-auto flex items-center gap-space-sm font-label-sm text-label-sm text-on-surface-variant">
-                CSAT feedback: <Icon name="sentiment_satisfied" size={18} className="text-tertiary" /> <Icon name="sentiment_neutral" size={18} className="text-solar-gold-dark" /> <Icon name="sentiment_dissatisfied" size={18} className="text-error" />
+                CSAT feedback: <Icon name="sentiment_satisfied" size={18} className="text-success" /> <Icon name="sentiment_neutral" size={18} className="text-solar-gold-dark" /> <Icon name="sentiment_dissatisfied" size={18} className="text-error" />
               </span>
             </div>
           </Card>

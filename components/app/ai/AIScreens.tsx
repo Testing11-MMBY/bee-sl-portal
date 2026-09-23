@@ -214,7 +214,7 @@ export function ComplianceRiskScoring({ module, screen }: { module: Module; scre
           { label: "Entities scored", value: "1,284", icon: "target", tone: "text-primary" },
           { label: "High-risk band", value: "37", icon: "priority_high", tone: "text-error" },
           { label: "Awaiting disposition", value: "12", icon: "how_to_reg", tone: "text-solar-gold-dark" },
-          { label: "Data period", value: "Q2 FY26", icon: "calendar_month", tone: "text-tertiary" },
+          { label: "Data period", value: "Q2 FY26", icon: "calendar_month", tone: "text-success" },
         ].map((k) => (
           <div key={k.label} className="bg-surface-card rounded-xl shadow-sm p-space-md">
             <div className="flex items-center justify-between"><span className="font-label-sm text-label-sm text-on-surface-variant">{k.label}</span><Icon name={k.icon} size={18} className={k.tone} /></div>
@@ -265,7 +265,7 @@ export function ComplianceRiskScoring({ module, screen }: { module: Module; scre
             </div>
             <div className="flex items-center gap-space-sm mb-space-md font-label-sm text-label-sm text-on-surface-variant">
               <span className="font-semibold text-on-surface">Thresholds:</span>
-              <span className="px-1.5 py-0.5 rounded bg-forest-light text-forest-dark">Low &lt; 40</span>
+              <span className="px-1.5 py-0.5 rounded bg-success-light text-success">Low &lt; 40</span>
               <span className="px-1.5 py-0.5 rounded bg-solar-gold-light text-solar-gold-dark">Medium 40–69</span>
               <span className="px-1.5 py-0.5 rounded bg-error-container text-on-error-container">High ≥ 70</span>
             </div>
@@ -283,7 +283,7 @@ export function ComplianceRiskScoring({ module, screen }: { module: Module; scre
                     <tr key={f.label} className="border-b border-border-subtle/60">
                       <td className="py-2 pr-space-sm font-body-sm text-body-sm text-on-surface">{f.label}</td>
                       <td className="py-2 pr-space-sm font-body-sm text-body-sm text-on-surface-variant whitespace-nowrap">{f.observed}</td>
-                      <td className="py-2 pr-space-sm"><span className={`inline-flex items-center gap-0.5 font-label-sm text-label-sm ${f.direction === "up" ? "text-error" : "text-tertiary"}`}><Icon name={f.direction === "up" ? "arrow_upward" : "arrow_downward"} size={13} /> {f.direction === "up" ? "Increases" : "Reduces"}</span></td>
+                      <td className="py-2 pr-space-sm"><span className={`inline-flex items-center gap-0.5 font-label-sm text-label-sm ${f.direction === "up" ? "text-error" : "text-success"}`}><Icon name={f.direction === "up" ? "arrow_upward" : "arrow_downward"} size={13} /> {f.direction === "up" ? "Increases" : "Reduces"}</span></td>
                       <td className="py-2 pr-space-sm font-body-sm text-body-sm text-on-surface font-semibold whitespace-nowrap">{f.direction === "up" ? "+" : "−"}{f.contribution}</td>
                       <td className="py-2 pr-space-sm"><button type="button" className="font-label-sm text-label-sm text-primary hover:underline">{f.evidence}</button></td>
                     </tr>
@@ -462,7 +462,7 @@ export function ProductionAnomalyDetection({ module, screen }: { module: Module;
               <textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Disposition reason (required, recorded in audit trail)…" rows={2} className="w-full px-space-sm py-2 rounded-lg bg-surface-container-low font-body-sm text-body-sm outline-none resize-none" />
               <div className="flex flex-wrap gap-space-sm mt-space-sm">
                 <button type="button" disabled={!reason.trim()} onClick={() => dispatch("Assigned for investigation")} className={`flex items-center gap-1.5 font-label-md text-label-md font-semibold py-2 px-space-md rounded-lg ${reason.trim() ? "bg-primary text-on-primary hover:bg-forest-dark" : "bg-surface-container text-on-surface-variant cursor-not-allowed"}`}><Icon name="person_search" size={16} /> Assign for investigation</button>
-                <button type="button" disabled={!reason.trim()} onClick={() => dispatch("Marked valid")} className={`flex items-center gap-1.5 font-label-md text-label-md font-semibold py-2 px-space-md rounded-lg ${reason.trim() ? "bg-forest-light text-forest-dark hover:bg-tertiary hover:text-on-primary" : "bg-surface-container text-on-surface-variant cursor-not-allowed"}`}><Icon name="check_circle" size={16} /> Mark valid</button>
+                <button type="button" disabled={!reason.trim()} onClick={() => dispatch("Marked valid")} className={`flex items-center gap-1.5 font-label-md text-label-md font-semibold py-2 px-space-md rounded-lg ${reason.trim() ? "bg-success-light text-success hover:bg-tertiary hover:text-on-primary" : "bg-surface-container text-on-surface-variant cursor-not-allowed"}`}><Icon name="check_circle" size={16} /> Mark valid</button>
                 <button type="button" disabled={!reason.trim()} onClick={() => dispatch("Confirmed exception")} className={`flex items-center gap-1.5 font-label-md text-label-md font-semibold py-2 px-space-md rounded-lg ${reason.trim() ? "bg-error-container text-on-error-container hover:bg-error hover:text-on-error" : "bg-surface-container text-on-surface-variant cursor-not-allowed"}`}><Icon name="report" size={16} /> Confirm exception</button>
               </div>
               {!reason.trim() && <p className="font-label-sm text-label-sm text-on-surface-variant mt-1">A reason is required for every disposition.</p>}
@@ -589,10 +589,10 @@ export function DocumentIntelligence({ module, screen }: { module: Module; scree
                         <span key={key} onClick={(e) => { e.stopPropagation(); setDispo((m) => ({ ...m, [f.field]: key })); }}
                           className={`font-label-sm text-label-sm px-2 py-1 rounded cursor-pointer ${d === key ? "bg-primary text-on-primary" : "bg-surface-container text-on-surface hover:bg-forest-light"}`}>{lbl}</span>
                       ))}
-                      {d && <span className="font-label-sm text-label-sm text-tertiary flex items-center gap-1"><Icon name="check" size={13} /> set</span>}
+                      {d && <span className="font-label-sm text-label-sm text-success flex items-center gap-1"><Icon name="check" size={13} /> set</span>}
                     </div>
                   ) : (
-                    <span className="font-label-sm text-label-sm text-tertiary flex items-center gap-1 mt-space-sm"><Icon name="check" size={14} /> Match</span>
+                    <span className="font-label-sm text-label-sm text-success flex items-center gap-1 mt-space-sm"><Icon name="check" size={14} /> Match</span>
                   )}
                 </button>
               );
@@ -601,7 +601,7 @@ export function DocumentIntelligence({ module, screen }: { module: Module; scree
 
           {done ? (
             <div className="mt-space-md bg-forest-light/50 rounded-lg p-space-md">
-              <div className="flex items-center gap-space-sm mb-space-sm"><Icon name="task_alt" size={20} className="text-tertiary" /><span className="font-title-sm text-title-sm text-on-surface font-semibold">Review complete</span></div>
+              <div className="flex items-center gap-space-sm mb-space-sm"><Icon name="task_alt" size={20} className="text-success" /><span className="font-title-sm text-title-sm text-on-surface font-semibold">Review complete</span></div>
               <div className="grid grid-cols-2 gap-1.5">
                 <MiniKV k="Reviewer" v={done.reviewer} />
                 <MiniKV k="Reviewed at" v={done.ts} />
@@ -683,7 +683,7 @@ export function HelpdeskAssistant({ module, screen }: { module: Module; screen: 
                 </div>
               ) : sent ? (
                 <div className="bg-forest-light/50 rounded-lg p-space-md">
-                  <div className="flex items-center gap-space-sm"><Icon name="mark_email_read" size={20} className="text-tertiary" /><span className="font-title-sm text-title-sm text-on-surface font-semibold">Sent by {agent.name}</span></div>
+                  <div className="flex items-center gap-space-sm"><Icon name="mark_email_read" size={20} className="text-success" /><span className="font-title-sm text-title-sm text-on-surface font-semibold">Sent by {agent.name}</span></div>
                   <p className="font-label-sm text-label-sm text-on-surface-variant mt-1">The helpdesk agent is the sender of record. AI assisted with the draft only.</p>
                 </div>
               ) : preview ? (
@@ -802,7 +802,7 @@ export function StarRatingTrends({ module, screen }: { module: Module; screen: S
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-space-md">
-        <Card title={`Star distribution — ${category}`} action={<span className="px-2 py-0.5 rounded-full bg-forest-light text-forest-dark font-label-sm text-label-sm font-semibold">Observed</span>}>
+        <Card title={`Star distribution — ${category}`} action={<span className="px-2 py-0.5 rounded-full bg-success-light text-success font-label-sm text-label-sm font-semibold">Observed</span>}>
           <div className="flex items-end justify-around h-48 gap-space-sm pt-space-md">
             {DIST_AFTER.map((v, i) => (
               <div key={i} className="flex-1 flex flex-col items-center justify-end h-full">
@@ -818,7 +818,7 @@ export function StarRatingTrends({ module, screen }: { module: Module; screen: S
           </div>
         </Card>
 
-        <Card title="Average rating over time" action={<span className="px-2 py-0.5 rounded-full bg-forest-light text-forest-dark font-label-sm text-label-sm font-semibold">Observed</span>}>
+        <Card title="Average rating over time" action={<span className="px-2 py-0.5 rounded-full bg-success-light text-success font-label-sm text-label-sm font-semibold">Observed</span>}>
           <div className="flex items-end justify-around h-48 gap-space-sm pt-space-md relative">
             {TREND.map((t) => (
               <div key={t.q} className="flex-1 flex flex-col items-center justify-end h-full">

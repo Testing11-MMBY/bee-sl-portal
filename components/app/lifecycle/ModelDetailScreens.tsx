@@ -134,7 +134,7 @@ function Body({ variant, app }: { variant: DetailVariant; app: ModelApplication 
             <Fact k="Scope" v={app.category} />
             <Fact k="Valid on test date" v="Yes" />
           </div>
-          <div className="mt-space-md bg-forest-light text-forest-dark rounded-lg p-space-sm font-body-sm text-body-sm flex items-center gap-space-sm">
+          <div className="mt-space-md bg-success-light text-success rounded-lg p-space-sm font-body-sm text-body-sm flex items-center gap-space-sm">
             <Icon name="verified" size={18} /> Accreditation confirmed valid on the declared test date ({app.testDate}).
           </div>
         </Card>

@@ -268,8 +268,8 @@ function DataBoundary() {
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-space-md">
         <div>
-          <div className="font-label-sm text-label-sm text-tertiary font-semibold mb-1 flex items-center gap-1"><Icon name="link" size={14} /> On-chain</div>
-          <ul className="space-y-0.5 font-label-sm text-label-sm text-on-surface-variant">{["Certificate / permission ID", "Certificate version", "SHA-256 hash", "Issuer", "Issue timestamp", "Lifecycle status", "Previous-version reference", "Transaction metadata"].map((x) => <li key={x} className="flex gap-1"><Icon name="lens" size={7} className="mt-1.5 text-tertiary" />{x}</li>)}</ul>
+          <div className="font-label-sm text-label-sm text-success font-semibold mb-1 flex items-center gap-1"><Icon name="link" size={14} /> On-chain</div>
+          <ul className="space-y-0.5 font-label-sm text-label-sm text-on-surface-variant">{["Certificate / permission ID", "Certificate version", "SHA-256 hash", "Issuer", "Issue timestamp", "Lifecycle status", "Previous-version reference", "Transaction metadata"].map((x) => <li key={x} className="flex gap-1"><Icon name="lens" size={7} className="mt-1.5 text-success" />{x}</li>)}</ul>
         </div>
         <div>
           <div className="font-label-sm text-label-sm text-error font-semibold mb-1 flex items-center gap-1"><Icon name="block" size={14} /> Off-chain (secured portal)</div>

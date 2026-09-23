@@ -14,15 +14,15 @@ function Chip({ code }: { code: string }) {
   const { t } = useLang();
   const tones: Record<string, string> = {
     V: "bg-surface-container text-on-surface-variant",
-    C: "bg-forest-light text-forest-dark",
-    E: "bg-forest-light text-forest-dark",
+    C: "bg-success-light text-success",
+    E: "bg-success-light text-success",
     S: "bg-secondary-fixed text-on-secondary-fixed",
     R: "bg-secondary-fixed text-on-secondary-fixed",
     A: "bg-primary text-on-primary",
     X: "bg-solar-gold-light text-solar-gold-dark",
     G: "bg-navy-subtle text-navy-dark",
     D: "bg-surface-container text-on-surface-variant",
-    P: "bg-forest-light text-forest-dark",
+    P: "bg-success-light text-success",
   };
   return (
     <span
@@ -90,7 +90,7 @@ function Status({ label, tone }: { label: string; tone: string }) {
   return <span className={`px-2 py-0.5 rounded-full font-label-sm text-label-sm font-semibold ${tone}`}>{label}</span>;
 }
 
-const OK = "bg-forest-light text-forest-dark";
+const OK = "bg-success-light text-success";
 const WARN = "bg-solar-gold-light text-solar-gold-dark";
 const BAD = "bg-error-container text-on-error-container";
 const INFO = "bg-secondary-fixed text-on-secondary-fixed";
@@ -192,7 +192,7 @@ function DashboardBody({ screen }: { screen: Screen }) {
         <StatCard icon="inbox" label="Open items" value="1,284" sub="+8.2% vs last month" />
         <StatCard icon="schedule" label="Due this week" value="176" tone="text-solar-gold-dark" />
         <StatCard icon="warning" label="Overdue / SLA breach" value="23" tone="text-error" />
-        <StatCard icon="task_alt" label="Cleared (30d)" value="4,910" tone="text-tertiary" />
+        <StatCard icon="task_alt" label="Cleared (30d)" value="4,910" tone="text-success" />
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-space-md">
         <div className="lg:col-span-2">
@@ -553,7 +553,7 @@ function VerifyBody({ screen }: { screen: Screen }) {
             <div className="font-label-sm text-label-sm text-on-surface-variant">BEE/RAC/2024/09841 • Active till Dec 2026</div>
           </div>
         </div>
-        <div className="bg-forest-light text-forest-dark rounded-lg p-space-sm font-body-sm text-body-sm">Certificate hash anchored on the permissioned ledger. Authenticity confirmed.</div>
+        <div className="bg-success-light text-success rounded-lg p-space-sm font-body-sm text-body-sm">Certificate hash anchored on the permissioned ledger. Authenticity confirmed.</div>
       </Card>
     </div>
   );

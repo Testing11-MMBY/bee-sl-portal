@@ -226,7 +226,7 @@ function Summary({ c, onGo }: { c: EnfCase; onGo: (t: string) => void }) {
       </div>
       <Card title="Quick status">
         <div className="space-y-space-sm">
-          <QuickRow icon="biotech" label="Lab verdict" value={c.lab.verdict} tone={c.lab.verdict === "Fail" ? "text-error" : "text-tertiary"} onClick={() => onGo("lab")} />
+          <QuickRow icon="biotech" label="Lab verdict" value={c.lab.verdict} tone={c.lab.verdict === "Fail" ? "text-error" : "text-success"} onClick={() => onGo("lab")} />
           <QuickRow icon="fact_check" label="Challenge test" value={c.challenge.requested ? c.challenge.result ?? "Requested" : "None"} onClick={() => onGo("challenge")} />
           <QuickRow icon="gavel" label="Show-cause" value={c.notices.showCauseOn ?? "Not issued"} onClick={() => onGo("notices")} />
           <QuickRow icon="account_balance" label="Penalty" value={c.penalty.status} onClick={() => onGo("penalty")} />
@@ -281,7 +281,7 @@ function CustodyTab({ c }: { c: EnfCase }) {
         {c.custody.map((h, i) => (
           <div key={h.seq} className="flex gap-space-sm">
             <div className="flex flex-col items-center">
-              <span className="w-7 h-7 rounded-full bg-forest-light text-forest-dark flex items-center justify-center font-label-sm text-label-sm font-bold shrink-0">{h.seq}</span>
+              <span className="w-7 h-7 rounded-full bg-success-light text-success flex items-center justify-center font-label-sm text-label-sm font-bold shrink-0">{h.seq}</span>
               {i < c.custody.length - 1 && <span className="w-px flex-1 bg-border-strong my-1" />}
             </div>
             <div className="pb-space-md">

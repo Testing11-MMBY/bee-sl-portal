@@ -14,7 +14,7 @@ import { VerifyScenario, maskHash, maskTx, shortHash, SIM_LABEL_TEXT } from "@/l
 
 type Tone = "positive" | "warn" | "bad" | "neutral";
 const BANNER: Record<Tone, string> = {
-  positive: "bg-forest-dark text-on-primary",
+  positive: "bg-success text-on-success",
   warn: "bg-solar-gold-light text-solar-gold-dark",
   bad: "bg-error-container text-on-error-container",
   neutral: "bg-surface-container text-on-surface",
@@ -83,7 +83,7 @@ export function VerificationResult({ scenario, mode }: { scenario: VerifyScenari
             {proofOpen && (
               <div className="p-space-md space-y-space-sm">
                 {matched !== null && (
-                  <div className={`flex items-center gap-space-sm rounded-lg p-space-sm font-label-md text-label-md font-semibold ${matched ? "bg-forest-light text-forest-dark" : "bg-error-container text-on-error-container"}`}>
+                  <div className={`flex items-center gap-space-sm rounded-lg p-space-sm font-label-md text-label-md font-semibold ${matched ? "bg-success-light text-success" : "bg-error-container text-on-error-container"}`}>
                     <Icon name={matched ? "check_circle" : "error"} size={18} fill /> Hash comparison: {matched ? "MATCH — current hash equals ledger hash" : "MISMATCH — current hash differs from ledger hash"}
                   </div>
                 )}
@@ -115,7 +115,7 @@ export function VerificationResult({ scenario, mode }: { scenario: VerifyScenari
 }
 
 function StatusChip({ id, status }: { id: string; status?: string }) {
-  const tone = id === "active" ? "bg-forest-light text-forest-dark"
+  const tone = id === "active" ? "bg-success-light text-success"
     : id === "revoked" || id === "mismatch" ? "bg-error-container text-on-error-container"
     : "bg-solar-gold-light text-solar-gold-dark";
   // A tampered certificate must never show an "Active"/verified badge.

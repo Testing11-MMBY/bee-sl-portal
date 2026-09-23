@@ -83,7 +83,7 @@ export function LedgerProof({
       {open && (
         <div className="p-space-md space-y-space-sm">
           {matched !== null && (
-            <div className={`flex items-center gap-space-sm rounded-lg p-space-sm font-label-md text-label-md font-semibold ${matched ? "bg-forest-light text-forest-dark" : "bg-error-container text-on-error-container"}`}>
+            <div className={`flex items-center gap-space-sm rounded-lg p-space-sm font-label-md text-label-md font-semibold ${matched ? "bg-success-light text-success" : "bg-error-container text-on-error-container"}`}>
               <Icon name={matched ? "check_circle" : "error"} size={18} fill /> Hash comparison: {matched ? "MATCH" : "MISMATCH"}
             </div>
           )}
@@ -113,7 +113,7 @@ export function LifecycleTimeline({ versions }: { versions: CertVersionState[] }
       {[...versions].reverse().map((v, i, arr) => (
         <div key={v.version} className="flex gap-space-sm">
           <div className="flex flex-col items-center">
-            <span className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${v.status === "Revoked" ? "bg-error-container text-error" : v.status === "Active" ? "bg-forest-light text-tertiary" : "bg-surface-container text-on-surface-variant"}`}><Icon name={EVENT_ICON[v.event] ?? "circle"} size={16} /></span>
+            <span className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${v.status === "Revoked" ? "bg-error-container text-error" : v.status === "Active" ? "bg-forest-light text-success" : "bg-surface-container text-on-surface-variant"}`}><Icon name={EVENT_ICON[v.event] ?? "circle"} size={16} /></span>
             {i < arr.length - 1 && <span className="w-px flex-1 bg-border-strong my-1" />}
           </div>
           <div className="pb-space-md">
@@ -226,7 +226,7 @@ export function ReconciliationSummary({ counts, exceptions, onOpen }: {
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-space-sm">
         {[
           { l: "Portal certificates", v: counts.portal, tone: "text-on-surface" },
-          { l: "Confirmed on ledger", v: counts.confirmed, tone: "text-tertiary" },
+          { l: "Confirmed on ledger", v: counts.confirmed, tone: "text-success" },
           { l: "Missing ledger", v: counts.missing, tone: "text-error" },
           { l: "Hash mismatches", v: counts.mismatch, tone: "text-error" },
           { l: "Pending", v: counts.pending, tone: "text-solar-gold-dark" },
@@ -248,7 +248,7 @@ export function ReconciliationSummary({ counts, exceptions, onOpen }: {
               {onOpen && <button type="button" onClick={() => onOpen(r)} className="font-label-sm text-label-sm text-primary hover:underline shrink-0">Open</button>}
             </div>
           ))}
-          {exceptions.length === 0 && <div className="flex items-center gap-space-sm text-on-surface-variant"><Icon name="check_circle" size={16} className="text-tertiary" /> <span className="font-body-sm text-body-sm">No exceptions — portal and ledger are in sync.</span></div>}
+          {exceptions.length === 0 && <div className="flex items-center gap-space-sm text-on-surface-variant"><Icon name="check_circle" size={16} className="text-success" /> <span className="font-body-sm text-body-sm">No exceptions — portal and ledger are in sync.</span></div>}
         </div>
         <p className="font-label-sm text-label-sm text-on-surface-variant mt-space-sm">Last reconciliation: {counts.lastRun}. Auto-fix is intentionally not available in this prototype.</p>
       </div>

@@ -122,7 +122,7 @@ export function AccessManagement() {
                 <div className="flex-1 min-w-0"><div className="font-body-sm text-body-sm text-on-surface font-semibold">{r.user}</div><div className="font-label-sm text-label-sm text-on-surface-variant">{r.role} · last used {r.lastUsed}</div></div>
                 <Status label={r.risk} tone={r.risk === "Low" ? OK : WARN} />
                 <div className="flex gap-1.5">
-                  <button className="font-label-sm text-label-sm bg-forest-light text-forest-dark px-2 py-1 rounded hover:bg-tertiary hover:text-on-primary">Confirm</button>
+                  <button className="font-label-sm text-label-sm bg-success-light text-success px-2 py-1 rounded hover:bg-tertiary hover:text-on-primary">Confirm</button>
                   <button className="font-label-sm text-label-sm bg-error-container text-on-error-container px-2 py-1 rounded hover:bg-error hover:text-on-error">Revoke</button>
                 </div>
               </div>
