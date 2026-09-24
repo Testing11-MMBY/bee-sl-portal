@@ -6,7 +6,7 @@ import { Suspense } from "react";
 import { Icon } from "@/components/ui/Icon";
 import { APPLIANCES, Appliance } from "@/lib/mock/appliances";
 import { VerificationResult } from "@/components/app/blockchain/VerificationResult";
-import { VERIFY_SCENARIOS, VerifyScenario, VerifyOutcome, PRIMARY_CERT } from "@/lib/mock/certificate";
+import { VERIFY_SCENARIOS, VerifyScenario, VerifyOutcome, PRIMARY_CERT, pendingScenarioForReg } from "@/lib/mock/certificate";
 import { readCertState } from "@/components/app/blockchain/CertificateStore";
 
 /** Live scenario for the demo certificate from the shared store (reflects amend/revoke/ledger status). */
@@ -84,6 +84,10 @@ function VerifyInner() {
     const all = [...APPLIANCES, ...dynamic];
     const a = all.find((x) => x.regId.toLowerCase() === norm);
     if (a) { setScenario(fromAppliance(a)); return; }
+    // registration exists but its certificate is not yet anchored → pending
+    // (same reconciliation fixture the monitoring view reads), never "not found"
+    const pending = pendingScenarioForReg(norm);
+    if (pending) { setScenario(pending); return; }
     setScenario({ id: "not-found", label: "Not found", regId: q });
   }
 

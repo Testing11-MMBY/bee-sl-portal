@@ -6,36 +6,42 @@ import { useRole } from "@/components/app/RoleContext";
 import { useLang } from "@/components/i18n/LangProvider";
 import { countForRole, SCREEN_COUNT } from "@/lib/screens";
 import { categoriesForRole } from "@/lib/categories";
-import { isExternalRole } from "@/lib/roles";
+import { isExternalRole, RoleKey } from "@/lib/roles";
+import { useLifecycle } from "@/components/app/LifecycleStore";
 
 export default function AppOverview() {
   const { role } = useRole();
   const { t, lang } = useLang();
+  const { tasks } = useLifecycle();
   const categories = categoriesForRole(role);
   const external = isExternalRole(role);
   const visible = countForRole(role);
-  // Partners never see the 140-screen internal catalogue — describe their own
-  // scoped workspace instead of "N of 140 internal screens".
-  const summary = external
+
+  // Officer KPIs are computed from the SAME task set the personal inbox filters
+  // to, so the dashboard cards and the inbox never disagree.
+  const mine = tasks.filter((tk) => tk.ownerRoles.includes(role));
+  const myQueue = mine.length;
+  const myApprovals = mine.filter((tk) => tk.stage === "approval").length;
+  const myOverdue = mine.filter((tk) => tk.overdue).length;
+
+  // Partner summaries + KPIs are role-specific: an assessor, a state agency and
+  // a lab do different work, so their wording and counts differ.
+  const partner = PARTNER_DASH[role];
+  const summary = external && partner
+    ? t(partner.summaryKey).replace("{modules}", String(categories.length))
+    : external
     ? t("app.partnerSummary").replace("{modules}", String(categories.length))
     : t("app.accessSummary")
         .replace("{visible}", String(visible))
         .replace("{total}", String(SCREEN_COUNT))
         .replace("{modules}", String(categories.length));
 
-  // Role-kind-appropriate KPIs: BEE officers see queue/approval/SLA metrics;
-  // partners see their own registration, label and support counts.
   const kpis = external
-    ? [
-        { icon: "verified", label: t("app.kpi.pModels"), value: "6", tone: "text-primary" },
-        { icon: "note_add", label: t("app.kpi.pApplications"), value: "2", tone: "text-solar-gold-dark" },
-        { icon: "qr_code_2", label: t("app.kpi.pQr"), value: "3", tone: "text-tertiary" },
-        { icon: "confirmation_number", label: t("app.kpi.pTickets"), value: "1", tone: "text-on-surface-variant" },
-      ]
+    ? (partner ?? PARTNER_DASH.manufacturer!).cards.map((c) => ({ icon: c.icon, label: t(c.labelKey), value: c.value, tone: c.tone }))
     : [
-        { icon: "inbox", label: t("app.kpi.queue"), value: "42", tone: "text-primary" },
-        { icon: "hourglass_top", label: t("app.kpi.approval"), value: "9", tone: "text-solar-gold-dark" },
-        { icon: "warning", label: t("app.kpi.sla"), value: "3", tone: "text-error" },
+        { icon: "inbox", label: t("app.kpi.queue"), value: String(myQueue), tone: "text-primary" },
+        { icon: "hourglass_top", label: t("app.kpi.approval"), value: String(myApprovals), tone: "text-solar-gold-dark" },
+        { icon: "warning", label: t("app.kpi.sla"), value: String(myOverdue), tone: myOverdue ? "text-error" : "text-tertiary" },
         { icon: "task_alt", label: t("app.kpi.cleared"), value: "218", tone: "text-tertiary" },
       ];
 
@@ -98,3 +104,53 @@ export default function AppOverview() {
     </div>
   );
 }
+
+/** Per-role partner dashboards — distinct wording and counts by function. */
+type PartnerCard = { icon: string; labelKey: string; value: string; tone: string };
+const PARTNER_DASH: Partial<Record<RoleKey, { summaryKey: string; cards: PartnerCard[] }>> = {
+  manufacturer: {
+    summaryKey: "app.partnerSummary",
+    cards: [
+      { icon: "verified", labelKey: "app.kpi.pModels", value: "6", tone: "text-primary" },
+      { icon: "note_add", labelKey: "app.kpi.pApplications", value: "2", tone: "text-solar-gold-dark" },
+      { icon: "qr_code_2", labelKey: "app.kpi.pQr", value: "3", tone: "text-tertiary" },
+      { icon: "confirmation_number", labelKey: "app.kpi.pTickets", value: "1", tone: "text-on-surface-variant" },
+    ],
+  },
+  agency: {
+    summaryKey: "app.partnerSummary",
+    cards: [
+      { icon: "verified", labelKey: "app.kpi.pModels", value: "14", tone: "text-primary" },
+      { icon: "note_add", labelKey: "app.kpi.pApplications", value: "5", tone: "text-solar-gold-dark" },
+      { icon: "qr_code_2", labelKey: "app.kpi.pQr", value: "8", tone: "text-tertiary" },
+      { icon: "confirmation_number", labelKey: "app.kpi.pTickets", value: "2", tone: "text-on-surface-variant" },
+    ],
+  },
+  iame: {
+    summaryKey: "app.iameSummary",
+    cards: [
+      { icon: "assignment_ind", labelKey: "app.kpi.iAssigned", value: "9", tone: "text-primary" },
+      { icon: "fact_check", labelKey: "app.kpi.iScrutiny", value: "3", tone: "text-solar-gold-dark" },
+      { icon: "task_alt", labelKey: "app.kpi.iReports", value: "6", tone: "text-tertiary" },
+      { icon: "confirmation_number", labelKey: "app.kpi.pTickets", value: "1", tone: "text-on-surface-variant" },
+    ],
+  },
+  sda: {
+    summaryKey: "app.sdaSummary",
+    cards: [
+      { icon: "folder_special", labelKey: "app.kpi.sCases", value: "4", tone: "text-primary" },
+      { icon: "science", labelKey: "app.kpi.sSamples", value: "11", tone: "text-solar-gold-dark" },
+      { icon: "storefront", labelKey: "app.kpi.sChecks", value: "2", tone: "text-error" },
+      { icon: "confirmation_number", labelKey: "app.kpi.pTickets", value: "1", tone: "text-on-surface-variant" },
+    ],
+  },
+  laboratory: {
+    summaryKey: "app.labSummary",
+    cards: [
+      { icon: "biotech", labelKey: "app.kpi.lAssignments", value: "7", tone: "text-primary" },
+      { icon: "hourglass_top", labelKey: "app.kpi.lTests", value: "3", tone: "text-solar-gold-dark" },
+      { icon: "task_alt", labelKey: "app.kpi.lReports", value: "5", tone: "text-tertiary" },
+      { icon: "confirmation_number", labelKey: "app.kpi.pTickets", value: "0", tone: "text-on-surface-variant" },
+    ],
+  },
+};

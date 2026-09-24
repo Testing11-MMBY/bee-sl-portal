@@ -114,8 +114,9 @@ function LabelAndQR({ active, qrBatch }: { active: boolean; qrBatch: string }) {
             <KV k="Artefact" v={`BEE_CERT_RAC_2026_10016_v${v}.pdf`} mono />
             <KV k="Certificate ID" v={c.certId} mono />
             <div>
-              <div className="font-label-sm text-label-sm text-on-surface-variant">SHA-256 of label artefact</div>
+              <div className="font-label-sm text-label-sm text-on-surface-variant">Certificate document SHA-256 (anchored, v{v})</div>
               <div className="font-mono text-label-sm break-all text-on-surface bg-surface-container-low rounded p-space-sm mt-1">{current?.hash ?? c.versions[c.currentVersion - 1].hash}</div>
+              <div className="font-label-sm text-label-sm text-on-surface-variant mt-1">The label artefact embeds this same anchored certificate hash — one file, one hash.</div>
             </div>
             <Link href="#" onClick={(e) => e.preventDefault()} className="inline-flex items-center gap-1 font-label-sm text-label-sm text-primary hover:underline">
               <Icon name="account_tree" size={14} /> This hash is anchored on the ledger — see the Certificate &amp; Ledger tab

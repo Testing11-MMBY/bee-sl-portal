@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Icon } from "@/components/ui/Icon";
 import { Card, FakeTable, ScreenChrome, Status, OK, WARN, BAD, INFO } from "@/components/app/ScreenScaffold";
 import { useLifecycle } from "@/components/app/LifecycleStore";
+import { useRole } from "@/components/app/RoleContext";
 import { Module, Screen } from "@/lib/screens";
 import { STAGE_META } from "@/lib/mock/lifecycle";
 import { StageBadge } from "./shared";
@@ -14,20 +15,25 @@ const PR_TONE: Record<string, string> = { High: BAD, Medium: WARN, Low: INFO };
 /** Personal inbox & team queue. */
 export function WorkflowInbox({ module, screen, scope }: { module: Module; screen: Screen; scope: "personal" | "team" }) {
   const { tasks } = useLifecycle();
+  const { role } = useRole();
   const [filter, setFilter] = useState<"all" | "overdue" | "returned">("all");
 
-  const shown = tasks.filter((t) =>
+  // Personal inbox = only the tasks THIS role owns (can act on). The team queue
+  // keeps the full shared list. Counts below derive from `mine`, so the tabs and
+  // the empty state always match what is shown.
+  const mine = scope === "personal" ? tasks.filter((t) => t.ownerRoles.includes(role)) : tasks;
+  const shown = mine.filter((t) =>
     filter === "all" ? true : filter === "overdue" ? t.overdue : t.priority === "High"
   );
 
   return (
-    <ScreenChrome module={module} screen={screen} subtitle={scope === "personal" ? "Tasks assigned to you" : "Shared team queue"}>
+    <ScreenChrome module={module} screen={screen} subtitle={scope === "personal" ? "Tasks you can act on" : "Shared team queue"}>
       <div className="space-y-space-md">
         <div className="flex items-center gap-space-sm">
           {([
-            ["all", `All (${tasks.length})`],
-            ["overdue", `Overdue (${tasks.filter((t) => t.overdue).length})`],
-            ["returned", `High priority (${tasks.filter((t) => t.priority === "High").length})`],
+            ["all", `All (${mine.length})`],
+            ["overdue", `Overdue (${mine.filter((t) => t.overdue).length})`],
+            ["returned", `High priority (${mine.filter((t) => t.priority === "High").length})`],
           ] as const).map(([k, label]) => (
             <button key={k} onClick={() => setFilter(k)} className={`px-space-md py-1.5 rounded-lg font-label-md text-label-md ${filter === k ? "bg-primary text-on-primary" : "bg-surface-container text-on-surface"}`}>
               {label}
@@ -36,7 +42,16 @@ export function WorkflowInbox({ module, screen, scope }: { module: Module; scree
         </div>
         <Card>
           {shown.length === 0 ? (
-            <p className="font-body-sm text-body-sm text-on-surface-variant py-space-md text-center">No tasks in this view.</p>
+            <div className="py-space-lg text-center">
+              <Icon name="inbox" size={28} className="text-outline" />
+              <p className="font-body-sm text-body-sm text-on-surface-variant mt-1">
+                {scope === "personal"
+                  ? mine.length === 0
+                    ? "No tasks are currently assigned to your role."
+                    : "No tasks match this filter."
+                  : "No tasks in this view."}
+              </p>
+            </div>
           ) : (
             <FakeTable
               columns={["Task", "Reference", "Queue", "Priority", "Due", ""]}

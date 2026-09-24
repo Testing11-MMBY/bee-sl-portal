@@ -26,6 +26,11 @@ export function CertificateWorkspace({ view }: { view?: "ledger" | "history" | "
   const { state, current, dispatch } = useCert();
   const [localTab, setTab] = useState<"ledger" | "history" | "actions">("ledger");
   const tab = view ?? localTab;   // controlled when the parent supplies a view
+  // Version-specific ledger proof defaults to the CURRENT version, so a revoked
+  // certificate opens on its v3 revocation proof — not the v1 issuance.
+  const [verSel, setVerSel] = useState<number | null>(null);
+  const selVer = verSel ?? state.currentVersion;
+  const selVersion = state.versions.find((v) => v.version === selVer) ?? state.versions[state.versions.length - 1];
 
   const s = state.issuance;
   const hashed = ["HASH_CALCULATED", "LEDGER_SUBMITTED", "RETRYING", "FAILED", "LEDGER_CONFIRMED", "ACTIVE"].includes(s);
@@ -69,6 +74,36 @@ export function CertificateWorkspace({ view }: { view?: "ledger" | "history" | "
 
       {tab === "ledger" && (
         <div className="space-y-space-md">
+          {/* Version-specific ledger proof — opens on the CURRENT version */}
+          {selVersion && (
+            <Card title="Ledger proof (version-specific)" action={<CertificateStatusBadge status={selVersion.status} />}>
+              <div className="flex flex-wrap gap-1.5 mb-space-md">
+                {state.versions.map((v) => (
+                  <button key={v.version} type="button" onClick={() => setVerSel(v.version)}
+                    className={`px-space-sm py-1.5 rounded-lg font-label-sm text-label-sm border transition-colors ${selVer === v.version ? "bg-primary text-on-primary border-primary" : "bg-surface-container-low text-on-surface border-border-subtle hover:bg-forest-light"}`}>
+                    v{v.version} · {v.event}{v.version === state.currentVersion ? " · current" : ""}
+                  </button>
+                ))}
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-space-md gap-y-space-sm">
+                <KV k="Version / event" v={`v${selVersion.version} · ${selVersion.event}`} />
+                <KV k="Lifecycle status" v={selVersion.status} />
+                <KV k="Effective date" v={selVersion.effectiveDate} />
+                <KV k="Correlation ID" v={selVersion.correlationId} />
+                <KV k="Transaction ID" v={selVersion.txId} mono />
+                <KV k="Block number" v={`#${selVersion.block.toLocaleString("en-IN")}`} />
+                <KV k="Ledger timestamp" v={fmt(selVersion.ledgerTs)} />
+                <KV k="Audit reference" v={selVersion.auditRef} />
+              </div>
+              <div className="mt-space-sm">
+                <div className="font-label-sm text-label-sm text-on-surface-variant">Certificate document SHA-256 (anchored, v{selVersion.version})</div>
+                <div className="font-mono text-label-sm break-all text-on-surface bg-surface-container-low rounded p-space-sm mt-1">{selVersion.hash}</div>
+              </div>
+              <div className="mt-space-md"><LedgerProof portalHash={selVersion.hash} anchoredHash={selVersion.hash} txId={selVersion.txId} block={selVersion.block} ledgerTs={selVersion.ledgerTs} mode="authorised" defaultOpen={false} /></div>
+              <p className="font-label-sm text-label-sm text-on-surface-variant mt-space-sm flex items-start gap-1"><Icon name="info" size={13} className="mt-0.5" /> The label artefact for this version embeds this same anchored certificate hash — the label and the certificate document are one file, so they share one hash.</p>
+            </Card>
+          )}
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-space-md">
             {/* Stage 1 — certificate identity */}
             <Card title="Certificate" action={<CertificateStatusBadge status={active ? (current?.status ?? "Active") : s} />}>
@@ -86,7 +121,7 @@ export function CertificateWorkspace({ view }: { view?: "ledger" | "history" | "
             </Card>
 
             {/* Issuance progress + actions */}
-            <Card title="Issuance sequence">
+            <Card title="Initial issuance (v1) · simulation">
               <IssuanceProgress state={s} error={state.error} />
               <div className="flex flex-wrap gap-space-sm mt-space-md">
                 {failing ? (
@@ -113,6 +148,10 @@ export function CertificateWorkspace({ view }: { view?: "ledger" | "history" | "
           </div>
 
           {/* Stage 2 — hash */}
+          <div className="flex items-center gap-space-sm pt-space-xs">
+            <Icon name="play_circle" size={16} className="text-on-surface-variant" />
+            <span className="font-label-md text-label-md text-on-surface-variant">Initial issuance record (v1) — how the certificate was first anchored</span>
+          </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-space-md">
             <Card title="Hash calculation" action={<CertificateStatusBadge status={hashed ? "HASH_CALCULATED" : "DRAFT"} />}>
               {hashed ? (

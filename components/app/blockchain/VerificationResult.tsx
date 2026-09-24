@@ -29,6 +29,7 @@ function verdict(s: VerifyScenario): { tone: Tone; icon: string; title: string; 
     case "superseded": return { tone: "warn", icon: "layers", title: "Superseded by a newer version", sub: `A newer certificate version exists${s.supersededBy ? ` — ${s.supersededBy}` : ""}.` };
     case "mismatch": return { tone: "bad", icon: "gpp_bad", title: "Verification failed: the current certificate does not match the ledger record. Do not trust this certificate.", sub: "The computed hash differs from the anchored hash — possible tampering." };
     case "ledger-down": return { tone: "neutral", icon: "cloud_off", title: "Verification could not be completed. Please retry later.", sub: "The ledger is temporarily unavailable." };
+    case "pending": return { tone: "warn", icon: "hourglass_top", title: "Verification pending — certificate not yet anchored", sub: "This registration exists, but its certificate has not yet been confirmed on the blockchain ledger. Authenticity cannot be confirmed at this time — please check again later." };
     case "not-found": return { tone: "bad", icon: "search_off", title: "Registration not found", sub: "This ID is not in the BEE register. Do not trust the label." };
   }
 }
@@ -36,7 +37,7 @@ function verdict(s: VerifyScenario): { tone: Tone; icon: string; title: string; 
 export function VerificationResult({ scenario, mode }: { scenario: VerifyScenario; mode: "public" | "authorised" }) {
   const [proofOpen, setProofOpen] = useState(mode === "authorised");
   const v = verdict(scenario);
-  const showCert = scenario.id !== "not-found" && scenario.id !== "ledger-down";
+  const showCert = scenario.id !== "not-found" && scenario.id !== "ledger-down" && scenario.id !== "pending";
   const matched = scenario.currentHash && scenario.ledgerHash ? scenario.currentHash === scenario.ledgerHash : null;
   const showVal = (h?: string, masker?: (x: string) => string) => (h ? (mode === "public" && masker ? masker(h) : h) : "—");
 
@@ -50,6 +51,18 @@ export function VerificationResult({ scenario, mode }: { scenario: VerifyScenari
           {v.sub && <div className="font-body-sm text-body-sm opacity-90 mt-0.5">{v.sub}</div>}
         </div>
       </div>
+
+      {scenario.id === "pending" && (
+        <div className="p-space-lg">
+          <div className="bg-surface-container-low rounded-lg p-space-md space-y-1.5">
+            <div className="font-label-sm text-label-sm text-on-surface-variant">On record (pending anchor)</div>
+            <div className="flex items-center justify-between gap-space-sm"><span className="font-label-sm text-label-sm text-on-surface-variant">Registration ID</span><span className="font-mono text-label-md text-on-surface">{scenario.regId}</span></div>
+            {scenario.manufacturer && <div className="flex items-center justify-between gap-space-sm"><span className="font-label-sm text-label-sm text-on-surface-variant">Applicant</span><span className="font-label-md text-label-md text-on-surface">{scenario.manufacturer}</span></div>}
+            {scenario.model && <div className="flex items-center justify-between gap-space-sm"><span className="font-label-sm text-label-sm text-on-surface-variant">Model</span><span className="font-label-md text-label-md text-on-surface">{scenario.model}</span></div>}
+            <div className="flex items-center justify-between gap-space-sm"><span className="font-label-sm text-label-sm text-on-surface-variant">Ledger anchor</span><span className="font-label-md text-label-md text-solar-gold-dark">Awaiting confirmation</span></div>
+          </div>
+        </div>
+      )}
 
       {showCert && (
         <div className="p-space-lg space-y-space-md">

@@ -9,7 +9,7 @@ const B = process.env.AA_BUILD;
 if (!B) { console.error("Set AA_BUILD to the compiled config dir."); process.exit(2); }
 
 const { ROLES } = require(B + "/roles.js");
-const { CATEGORIES, ROLE_CATEGORIES, categoriesForRole, canRoleAccessPath } = require(B + "/categories.js");
+const { CATEGORIES, ROLE_CATEGORIES, categoriesForRole, canRoleAccessPath, WORKFLOW_ACCESS } = require(B + "/categories.js");
 const { MODULES, canRoleSee } = require(B + "/screens.js");
 
 // Known standalone (non-registry) routes the sidebar may point at.
@@ -87,6 +87,13 @@ check("Default-deny holds for unauthorised role/path pairs", () => {
     ["sda", "/app/mis-ai/executive-mis"],
   ];
   deny.forEach(([role, path]) => { if (canRoleAccessPath(role, path)) fail(`${role} should NOT reach ${path}`); });
+});
+
+check("Workflow action screens are reachable by their owner roles", () => {
+  Object.entries(WORKFLOW_ACCESS).forEach(([path, roles]) => {
+    if (!routeExists(path)) fail(`workflow path ${path} has no route`);
+    roles.forEach((r) => { if (!canRoleAccessPath(r, path)) fail(`${r} owns ${path} but guard denies it`); });
+  });
 });
 
 check("External partners see no internal-only menu item", () => {

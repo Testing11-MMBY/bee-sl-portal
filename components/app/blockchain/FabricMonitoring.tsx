@@ -65,9 +65,8 @@ export function FabricMonitoring({ module, screen }: { module: Module; screen: S
         <KPI label="Fabric network" value={H.status} icon="lan" tone={H.status === "Healthy" ? "text-success" : H.status === "Degraded" ? "text-solar-gold-dark" : "text-error"} chip={<Status label={H.status} tone={HEALTH_TONE[H.status]} />} />
         <KPI label="Tx success rate" value={`${H.successRate}%`} icon="check_circle" tone={H.successRate >= 99 ? "text-success" : "text-solar-gold-dark"} />
         <KPI label="Retrying / failed" value={`${H.retrying} / ${H.failed}`} icon="error" tone={H.retrying + H.failed ? "text-error" : "text-success"} />
-        <KPI label="Missing ledger" value={String(H.missing)} icon="link_off" tone={H.missing ? "text-error" : "text-success"} />
         <KPI label="Hash mismatches" value={String(H.mismatch)} icon="report" tone={H.mismatch ? "text-error" : "text-success"} />
-        <KPI label="Pending anchoring" value={String(H.pending + H.missing)} icon="hourglass_top" tone="text-solar-gold-dark" />
+        <KPI label="Awaiting anchor" value={String(H.awaitingAnchor)} icon="hourglass_top" tone={H.awaitingAnchor ? "text-solar-gold-dark" : "text-success"} chip={<span className="font-label-sm text-label-sm text-on-surface-variant">retry {H.retrying} · pending {H.pending} · missing {H.missing}</span>} />
         <KPI label="Avg ledger response" value={`${FABRIC_NETWORK.avgResponseMs} ms`} icon="speed" tone="text-primary" />
         <KPI label="Last committed block" value={`#${FABRIC_NETWORK.lastBlock.toLocaleString("en-IN")}`} icon="deployed_code" tone="text-on-surface" />
       </div>
@@ -135,14 +134,14 @@ export function FabricMonitoring({ module, screen }: { module: Module; screen: S
 
       {/* Reconciliation — counts computed from the same exception fixture */}
       <Card title="Portal ↔ ledger reconciliation" action={<Status label={H.exceptions ? `${H.exceptions} exceptions` : "In sync"} tone={H.exceptions ? WARN : OK} />}>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-space-sm mb-space-md">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-space-sm mb-space-xs">
           {[
             { l: "Confirmed on ledger", v: H.confirmed, tone: "text-success" },
-            { l: "Missing ledger", v: H.missing, tone: "text-error" },
-            { l: "Hash mismatches", v: H.mismatch, tone: "text-error" },
-            { l: "Pending", v: H.pending, tone: "text-solar-gold-dark" },
             { l: "Retrying", v: H.retrying, tone: "text-solar-gold-dark" },
-            { l: "Exceptions", v: H.exceptions, tone: "text-error" },
+            { l: "Submitted (pending)", v: H.pending, tone: "text-solar-gold-dark" },
+            { l: "Missing tx", v: H.missing, tone: H.missing ? "text-error" : "text-on-surface-variant" },
+            { l: "Hash mismatch", v: H.mismatch, tone: H.mismatch ? "text-error" : "text-on-surface-variant" },
+            { l: "Total exceptions", v: H.exceptions, tone: "text-error" },
           ].map((k) => (
             <div key={k.l} className="bg-surface-container-low rounded-lg p-space-sm text-center">
               <div className={`font-headline-sm text-headline-sm font-bold ${k.tone}`}>{k.v}</div>
@@ -150,6 +149,9 @@ export function FabricMonitoring({ module, screen }: { module: Module; screen: S
             </div>
           ))}
         </div>
+        <p className="font-label-sm text-label-sm text-on-surface-variant mb-space-md flex items-center gap-1">
+          <Icon name="functions" size={13} /> Awaiting anchor = retrying ({H.retrying}) + submitted-pending ({H.pending}) + missing ({H.missing}) = <span className="font-semibold text-on-surface">{H.awaitingAnchor}</span>. Each record is counted once. Hash mismatches are anchored but under review, not awaiting anchor.
+        </p>
         <div className="overflow-x-auto app-scroll">
           <table className="w-full text-left border-collapse">
             <thead><tr className="border-b border-border-subtle">{["Certificate", "Portal status", "Ledger status", "Cause", "Owner", "Next step", ""].map((h) => <th key={h} className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide py-2 pr-space-md whitespace-nowrap">{h}</th>)}</tr></thead>

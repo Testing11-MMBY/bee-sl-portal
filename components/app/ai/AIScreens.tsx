@@ -134,27 +134,27 @@ const RISK_ENTITIES: RiskEntity[] = [
   { id: "MFR-2231", name: "Nova Cool Appliances Ltd.", kind: "Manufacturer", score: 82, percentile: 98, lastScored: "24 Sep 2026, 06:15",
     factors: [
       { label: "QR verification anomalies", observed: "41 in 90 days", direction: "up", contribution: 28, evidence: "View events" },
-      { label: "Delayed submissions", observed: "5 quarters", direction: "up", contribution: 21, evidence: "View submissions" },
+      { label: "Delayed submissions", observed: "3 of last 3 quarters", direction: "up", contribution: 21, evidence: "View submissions" },
       { label: "Prior enforcement", observed: "2 confirmed cases", direction: "up", contribution: 18, evidence: "View cases" },
       { label: "Production mismatch", observed: "17.4% variance", direction: "up", contribution: 15, evidence: "View comparison" },
-    ], priorEnforcement: 2, submissionDelays: 5, qrAnomalies: 41 },
+    ], priorEnforcement: 2, submissionDelays: 3, qrAnomalies: 41 },
   { id: "MDL-10233", name: "FrostMax 1.5T (5★)", kind: "Model", score: 74, percentile: 94, lastScored: "24 Sep 2026, 06:15",
     factors: [
       { label: "Cross-model ISEER outlier", observed: "2.1σ from peers", direction: "up", contribution: 30, evidence: "View comparison" },
       { label: "QR verification anomalies", observed: "27 in 90 days", direction: "up", contribution: 28, evidence: "View events" },
-      { label: "Production spike", observed: "+286% QoQ", direction: "up", contribution: 22, evidence: "View submissions" },
-      { label: "Late quarterly filing", observed: "3 quarters", direction: "up", contribution: 20, evidence: "View submissions" },
-    ], priorEnforcement: 1, submissionDelays: 3, qrAnomalies: 27 },
+      { label: "Production spike", observed: "+286% QoQ", direction: "up", contribution: 22, evidence: "View comparison" },
+      { label: "Late quarterly filing", observed: "2 of last 3 quarters", direction: "up", contribution: 20, evidence: "View submissions" },
+    ], priorEnforcement: 1, submissionDelays: 2, qrAnomalies: 27 },
   { id: "MFR-1188", name: "Sunrise Electra Pvt. Ltd.", kind: "Manufacturer", score: 58, percentile: 81, lastScored: "24 Sep 2026, 06:15",
     factors: [
-      { label: "Delayed submissions", observed: "4 quarters", direction: "up", contribution: 40, evidence: "View submissions" },
+      { label: "Delayed submissions", observed: "3 of last 3 quarters", direction: "up", contribution: 40, evidence: "View submissions" },
       { label: "Document mismatch rate", observed: "9.2%", direction: "up", contribution: 32, evidence: "View comparison" },
       { label: "QR anomalies", observed: "12 in 90 days", direction: "up", contribution: 28, evidence: "View events" },
-    ], priorEnforcement: 0, submissionDelays: 4, qrAnomalies: 12 },
+    ], priorEnforcement: 0, submissionDelays: 3, qrAnomalies: 12 },
   { id: "MDL-10871", name: "AquaBreeze 2T (3★)", kind: "Model", score: 37, percentile: 62, lastScored: "24 Sep 2026, 06:15",
     factors: [
       { label: "Minor label variance", observed: "1.1% variance", direction: "up", contribution: 55, evidence: "View comparison" },
-      { label: "One late filing", observed: "1 quarter", direction: "up", contribution: 45, evidence: "View submissions" },
+      { label: "One late filing", observed: "1 of last 3 quarters", direction: "up", contribution: 45, evidence: "View submissions" },
     ], priorEnforcement: 0, submissionDelays: 1, qrAnomalies: 3 },
   { id: "MFR-3012", name: "GreenVolt Industries", kind: "Manufacturer", score: 24, percentile: 40, lastScored: "24 Sep 2026, 06:15",
     factors: [
@@ -172,25 +172,45 @@ const DECISION_LABEL: Record<string, string> = {
  * deterministically from the selected entity so the same entity always shows
  * the same underlying events, and the scoring period is carried through. */
 interface EvidenceTable { kind: string; note: string; columns: string[]; rows: string[][]; }
-const EV_PERIOD = "Q2 FY26 · Jul–Sep 2026";
+
+/* Demo "today". All evidence dates are on or before this — nothing in the
+ * future. The current Indian-FY quarter (Jul–Sep 2026) is Q2 of FY2026-27. */
+const DEMO_TODAY = new Date("2026-09-24T00:00:00");
+const EV_PERIOD = "Q2 FY27 · Jul–Sep 2026";
+const MS_DAY = 86_400_000;
+const fmtDate = (d: Date) => d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+const addDays = (d: Date, n: number) => new Date(d.getTime() + n * MS_DAY);
+const daysBetween = (a: Date, b: Date) => Math.round((a.getTime() - b.getTime()) / MS_DAY);
+
+/* Indian FY quarters ending on/before the demo date. The current quarter
+ * (Q2 FY27) is still open. Filing is due 15 days after quarter close. */
+const FY_QUARTERS = [
+  { q: "Q3 FY26", period: "Oct–Dec 2025", due: new Date("2026-01-15T00:00:00"), open: false },
+  { q: "Q4 FY26", period: "Jan–Mar 2026", due: new Date("2026-04-15T00:00:00"), open: false },
+  { q: "Q1 FY27", period: "Apr–Jun 2026", due: new Date("2026-07-15T00:00:00"), open: false },
+  { q: "Q2 FY27", period: "Jul–Sep 2026", due: new Date("2026-10-15T00:00:00"), open: true },
+];
+
 function evidenceFor(entity: RiskEntity, factor: RiskFactor): EvidenceTable {
   const seed = Number(entity.id.replace(/\D/g, "")) || 1;
   const pick = <T,>(arr: T[], i: number) => arr[(seed + i * 7) % arr.length];
-  const day = (i: number) => String(((seed + i * 11) % 28) + 1).padStart(2, "0");
-  const mon = (i: number) => ["Jul", "Aug", "Sep"][(seed + i) % 3];
   const locs = ["Pune", "Chennai", "Noida", "Ahmedabad", "Kochi", "Indore", "Jaipur", "Guwahati"];
 
   if (factor.evidence === "View events") {
     const total = entity.qrAnomalies;
     const shown = Math.min(total, 6);
     const verdicts = ["Duplicate serial", "Revoked-QR scan", "Serial not on ledger", "Region mismatch"];
+    // Dates spread across the 90-day window, most-recent first, none in the future.
+    const dates = Array.from({ length: shown }, (_, i) => addDays(DEMO_TODAY, -(2 + ((seed + i * 13) % 86))))
+      .sort((a, b) => b.getTime() - a.getTime());
+    const from = fmtDate(addDays(DEMO_TODAY, -90));
     return {
       kind: "QR verification anomalies",
-      note: `${total} anomalous scans in the 90-day window. Showing ${shown} most recent; each links to a scan record, not a confirmed violation.`,
-      columns: ["Event", "Date", "QR serial", "Scan location", "Verdict"],
-      rows: Array.from({ length: shown }, (_, i) => [
+      note: `${total} anomalous scans in the 90-day window (${from} – ${fmtDate(DEMO_TODAY)}). Each row below is a scan record — an anomaly flagged for review, not a confirmed violation.`,
+      columns: ["Scan record", "Date", "QR serial", "Scan location", "Verdict"],
+      rows: dates.map((d, i) => [
         `EV-${entity.id.replace(/\D/g, "")}-${100 + i}`,
-        `${day(i)} ${mon(i)} 2026`,
+        fmtDate(d),
         `QR-${(seed * 31 + i * 97) % 900000 + 100000}`,
         pick(locs, i),
         pick(verdicts, i),
@@ -198,22 +218,29 @@ function evidenceFor(entity: RiskEntity, factor: RiskFactor): EvidenceTable {
     };
   }
   if (factor.evidence === "View submissions") {
-    const quarters = ["Q3 FY25", "Q4 FY25", "Q1 FY26", "Q2 FY26"];
-    const dues = ["15 Jan 2026", "15 Apr 2026", "15 Jul 2026", "15 Oct 2026"];
-    const late = entity.submissionDelays;
+    // Late = filed after due; every "late by" is the real day difference and the
+    // summary counts the late rows, so numbers can't contradict the records.
+    const closed = FY_QUARTERS.filter((q) => !q.open).length;
+    const lateWanted = Math.min(entity.submissionDelays, closed);
+    let closedSeen = 0;
+    const rows = FY_QUARTERS.map((qq) => {
+      if (qq.open) return [`${qq.q} · ${qq.period}`, fmtDate(qq.due), "Not yet due", "Open"];
+      const idx = closedSeen++;
+      const isLate = idx >= closed - lateWanted;   // the most recent closed quarters are the late ones
+      if (isLate) {
+        const lateDays = ((seed + idx * 5) % 16) + 4;   // 4–19 days
+        const filed = addDays(qq.due, lateDays);
+        return [`${qq.q} · ${qq.period}`, fmtDate(qq.due), fmtDate(filed), `Late by ${daysBetween(filed, qq.due)} days`];
+      }
+      const early = ((seed + idx) % 6) + 1;
+      return [`${qq.q} · ${qq.period}`, fmtDate(qq.due), fmtDate(addDays(qq.due, -early)), "On time"];
+    });
+    const lateActual = rows.filter((r) => r[3].startsWith("Late")).length;
     return {
       kind: "Quarterly production submissions",
-      note: `${late} of the last ${quarters.length} filings were late. Statutory due date is the 15th after each quarter close.`,
+      note: `${lateActual} of the last ${closed} due filings were late (the current quarter is not yet due). Filing is due 15 days after each quarter close.`,
       columns: ["Quarter", "Due date", "Filed on", "Status"],
-      rows: quarters.map((q, i) => {
-        const isLate = i < late;
-        const days = isLate ? ((seed + i * 5) % 22) + 4 : 0;
-        return [
-          q, dues[i],
-          i === quarters.length - 1 ? "Not yet due" : isLate ? `${day(i)} ${mon(i)} 2026` : `On time`,
-          i === quarters.length - 1 ? "Open" : isLate ? `Late by ${days} days` : "On time",
-        ];
-      }),
+      rows,
     };
   }
   if (factor.evidence === "View cases") {
@@ -223,25 +250,27 @@ function evidenceFor(entity: RiskEntity, factor: RiskFactor): EvidenceTable {
     const outcomes = ["Penalty settled", "Corrective action closed"];
     return {
       kind: "Prior enforcement cases",
-      note: `${n} confirmed case${n > 1 ? "s" : ""} closed in the previous 24 months. Historical context only — not part of the current period's score evidence.`,
+      note: `${n} confirmed case${n > 1 ? "s" : ""} closed in the previous 24 months. Historical context only — not part of the current period's score.`,
       columns: ["Case", "Opened", "Type", "Outcome"],
       rows: Array.from({ length: n }, (_, i) => [
         `ENF-2025-${(seed * 3 + i * 41) % 900 + 100}`,
-        `${day(i)} ${["Feb", "May", "Nov"][(seed + i) % 3]} 2025`,
+        fmtDate(new Date(2025, [1, 4, 10][(seed + i) % 3], ((seed + i * 7) % 26) + 1)),
         pick(types, i),
         pick(outcomes, i),
       ]),
     };
   }
   // View comparison
+  const declUnits = (seed * 137) % 40 + 10;
+  const obsUnits = declUnits + (seed % 9) + 2;
   return {
     kind: "Declared vs observed comparison",
     note: `Portal-declared figures reconciled against ledger and test-lab records for ${EV_PERIOD}.`,
     columns: ["Metric", "Declared", "Observed", "Variance"],
     rows: [
-      ["Units produced (Q2)", `${(seed * 137) % 40 + 10}k`, `${(seed * 137) % 40 + 10 + (seed % 9) + 2}k`, factor.observed],
+      ["Units produced", `${declUnits}k`, `${obsUnits}k`, `+${Math.round(((obsUnits - declUnits) / declUnits) * 100)}%`],
       ["ISEER (rated vs test)", `${(3.6 + (seed % 5) / 10).toFixed(2)}`, `${(3.4 + (seed % 4) / 10).toFixed(2)}`, "Below rated"],
-      ["QR activations vs units", `${(seed * 137) % 40 + 10}k`, `${(seed * 137) % 40 + 8 + (seed % 6)}k`, "Shortfall"],
+      ["QR activations vs units", `${declUnits}k`, `${declUnits - ((seed % 4) + 1)}k`, "Shortfall"],
     ],
   };
 }
@@ -286,7 +315,7 @@ export function ComplianceRiskScoring({ module, screen }: { module: Module; scre
           { label: "Entities scored", value: "1,284", icon: "target", tone: "text-primary" },
           { label: "High-risk band", value: "37", icon: "priority_high", tone: "text-error" },
           { label: "Awaiting disposition", value: String(awaiting), icon: "how_to_reg", tone: "text-solar-gold-dark" },
-          { label: "Data period", value: "Q2 FY26", icon: "calendar_month", tone: "text-success" },
+          { label: "Data period", value: "Q2 FY27", icon: "calendar_month", tone: "text-success" },
         ].map((k) => (
           <div key={k.label} className="bg-surface-card rounded-xl shadow-sm p-space-md">
             <div className="flex items-center justify-between"><span className="font-label-sm text-label-sm text-on-surface-variant">{k.label}</span><Icon name={k.icon} size={18} className={k.tone} /></div>
@@ -334,7 +363,7 @@ export function ComplianceRiskScoring({ module, screen }: { module: Module; scre
               <MiniKV k="Entity ID" v={sel.id} />
               <MiniKV k="Risk score" v={`${sel.score} / 100`} />
               <MiniKV k="Population percentile" v={`${sel.percentile}th`} />
-              <MiniKV k="Scoring period" v="Q2 FY26" />
+              <MiniKV k="Scoring period" v="Q2 FY27" />
               <MiniKV k="Last scored" v={sel.lastScored} />
               <MiniKV k="Model / version" v="risk-rank v2.3" />
               <MiniKV k="Data freshness" v="Refreshed 24 Sep, 06:15" />
@@ -474,10 +503,10 @@ interface Anomaly {
 }
 
 const ANOMALIES: Anomaly[] = [
-  { id: "PRD-88213", model: "FrostMax 1.5T (5★)", manufacturer: "Nova Cool Appliances Ltd.", category: "Room Air Conditioner", type: "Period spike", confidence: 92, period: "Q2 FY26", observed: 48200, expected: 12500, peerAvg: 13800, execId: "EXE-2026-0731", note: "286% above trailing 4-quarter mean.", records: ["PROD-Q2-88213", "SER-10016-4xxx"] },
-  { id: "PRD-88190", model: "CoolWave 1T (4★)", manufacturer: "Sunrise Electra Pvt. Ltd.", category: "Room Air Conditioner", type: "Duplicate pattern", confidence: 88, period: "Q2 FY26", observed: 15000, expected: 15000, peerAvg: 9200, execId: "EXE-2026-0731", note: "Identical serial batch submitted twice.", records: ["PROD-Q2-88190", "PROD-Q1-88041"] },
-  { id: "PRD-88155", model: "AquaBreeze 2T (3★)", manufacturer: "GreenVolt Industries", category: "Room Air Conditioner", type: "Cross-model similarity", confidence: 76, period: "Q2 FY26", observed: 9800, expected: 6100, peerAvg: 6400, execId: "EXE-2026-0731", note: "Serial ranges overlap a different model family.", records: ["PROD-Q2-88155", "SER-10041-2xxx"] },
-  { id: "PRD-88122", model: "PolarPro 2T (5★)", manufacturer: "PolarPro Appliances", category: "Room Air Conditioner", type: "Quantity deviation", confidence: 69, period: "Q2 FY26", observed: 300, expected: 8200, peerAvg: 7600, execId: "EXE-2026-0731", note: "96% below expected — possible under-reporting.", records: ["PROD-Q2-88122"] },
+  { id: "PRD-88213", model: "FrostMax 1.5T (5★)", manufacturer: "Nova Cool Appliances Ltd.", category: "Room Air Conditioner", type: "Period spike", confidence: 92, period: "Q2 FY27", observed: 48200, expected: 12500, peerAvg: 13800, execId: "EXE-2026-0731", note: "286% above trailing 4-quarter mean.", records: ["PROD-Q2-88213", "SER-10016-4xxx"] },
+  { id: "PRD-88190", model: "CoolWave 1T (4★)", manufacturer: "Sunrise Electra Pvt. Ltd.", category: "Room Air Conditioner", type: "Duplicate pattern", confidence: 88, period: "Q2 FY27", observed: 15000, expected: 15000, peerAvg: 9200, execId: "EXE-2026-0731", note: "Identical serial batch submitted twice.", records: ["PROD-Q2-88190", "PROD-Q1-88041"] },
+  { id: "PRD-88155", model: "AquaBreeze 2T (3★)", manufacturer: "GreenVolt Industries", category: "Room Air Conditioner", type: "Cross-model similarity", confidence: 76, period: "Q2 FY27", observed: 9800, expected: 6100, peerAvg: 6400, execId: "EXE-2026-0731", note: "Serial ranges overlap a different model family.", records: ["PROD-Q2-88155", "SER-10041-2xxx"] },
+  { id: "PRD-88122", model: "PolarPro 2T (5★)", manufacturer: "PolarPro Appliances", category: "Room Air Conditioner", type: "Quantity deviation", confidence: 69, period: "Q2 FY27", observed: 300, expected: 8200, peerAvg: 7600, execId: "EXE-2026-0731", note: "96% below expected — possible under-reporting.", records: ["PROD-Q2-88122"] },
 ];
 
 const ANO_TONE: Record<AnomalyType, string> = {
@@ -773,6 +802,7 @@ export function HelpdeskAssistant({ module, screen }: { module: Module; screen: 
   const [preview, setPreview] = useState(false);
   const [sent, setSent] = useState(false);
   const [liveMode, setLiveMode] = useState(model.live);  // Shadow model → sending disabled by default
+  const canAuthorise = GOV_ACTORS.has(role);             // only model admins may promote to live
   const confidence = simLow ? 58 : 82;
   const lowConf = confidence < THRESHOLD;
   const canSend = liveMode;
@@ -789,10 +819,14 @@ export function HelpdeskAssistant({ module, screen }: { module: Module; screen: 
       {!liveMode && (
         <div className="flex flex-wrap items-center gap-space-sm bg-navy-subtle border border-navy-dark/20 rounded-xl p-space-sm" role="note">
           <Icon name="science" size={18} className="text-navy-dark shrink-0" />
-          <p className="font-body-sm text-body-sm text-on-surface flex-1"><span className="font-semibold">Shadow model ({modelLabel(model)}).</span> Evaluation and feedback only — the assistant cannot send a response to a user until it is promoted to Live by governance.</p>
-          <label className="flex items-center gap-1.5 font-label-sm text-label-sm text-navy-dark cursor-pointer whitespace-nowrap">
-            <input type="checkbox" checked={liveMode} onChange={(e) => setLiveMode(e.target.checked)} className="accent-primary" /> Authorise live (demo)
-          </label>
+          <p className="font-body-sm text-body-sm text-on-surface flex-1"><span className="font-semibold">Shadow model ({modelLabel(model)}).</span> Evaluation and feedback only — the assistant cannot send a response to a user until it is promoted to Live in model governance.</p>
+          {canAuthorise ? (
+            <label className="flex items-center gap-1.5 font-label-sm text-label-sm text-navy-dark cursor-pointer whitespace-nowrap">
+              <input type="checkbox" checked={liveMode} onChange={(e) => setLiveMode(e.target.checked)} className="accent-primary" /> Authorise live (demo)
+            </label>
+          ) : (
+            <span className="inline-flex items-center gap-1 font-label-sm text-label-sm text-navy-dark whitespace-nowrap"><Icon name="lock" size={13} /> Only a model administrator can promote this model</span>
+          )}
         </div>
       )}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-space-md">

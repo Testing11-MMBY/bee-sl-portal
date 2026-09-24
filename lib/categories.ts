@@ -44,6 +44,8 @@ export interface Category {
 const ALL_EXTERNAL: RoleKey[] = ["manufacturer", "agency", "iame", "sda", "laboratory"];
 /** Manufacturer + agency together own the registration/label/production journey. */
 const MFR_AGENCY: RoleKey[] = ["manufacturer", "agency"];
+/** All internal roles — used to scope an item to external partners only. */
+const ALL_INTERNAL: RoleKey[] = ["admin", "programme", "reviewer", "director", "secretary", "finance", "helpdesk", "auditor"];
 
 export const CATEGORIES: Category[] = [
   {
@@ -71,6 +73,9 @@ export const CATEGORIES: Category[] = [
       { en: "Approved models", hi: "अनुमोदित मॉडल", href: "/app/model-label/model-dashboard", icon: "verified", ext: MFR_AGENCY },
       { en: "Renewals and changes", hi: "नवीनीकरण एवं परिवर्तन", href: "/app/model-label/renewal-or-degradation", icon: "autorenew", ext: MFR_AGENCY },
       { en: "Withdrawals", hi: "वापसी", href: "/app/withdrawal/brand-withdrawal", icon: "cancel", ext: MFR_AGENCY },
+      // Partner-only: an applicant's own fee status and receipts for their
+      // applications. Internal finance uses the Finance workspace instead.
+      { en: "Payments and receipts", hi: "भुगतान एवं रसीदें", href: "/app/model-label/model-payment", icon: "receipt_long", ext: MFR_AGENCY, hideFrom: ALL_INTERNAL },
     ],
   },
   {
@@ -196,6 +201,21 @@ export const ROLE_CATEGORIES: Record<RoleKey, string[]> = {
   laboratory: ["home", "compliance", "support"],
 };
 
+/**
+ * Workflow action screens are reachable by the roles that own that step, even
+ * when the screen's module is not otherwise in their menu — so a personal-inbox
+ * task never resolves to a "Not available for your role" page. Partners get
+ * their own scoped read (e.g. a manufacturer viewing its own fee/receipt).
+ */
+export const WORKFLOW_ACCESS: Record<string, RoleKey[]> = {
+  "/app/model-label/model-payment": ["finance", "manufacturer", "agency"],
+  "/app/model-label/iame-scrutiny": ["iame", "reviewer", "programme"],
+  "/app/model-label/bee-scrutiny": ["reviewer", "programme"],
+  "/app/model-label/director-approval": ["director", "secretary"],
+  "/app/model-label/secretary-approval": ["secretary", "director"],
+  "/app/model-label/rating-calculation": ["programme"],
+};
+
 /** Whether a single item is visible to a role (item-level scope). */
 export function itemVisibleTo(item: CategoryItem, role: RoleKey): boolean {
   if (isExternalRole(role)) return !!item.ext?.includes(role);
@@ -229,6 +249,8 @@ function exactItem(cat: Category, pathname: string): CategoryItem | undefined {
 export function canRoleAccessPath(role: RoleKey, pathname: string): boolean {
   // Console shell + dev catalogue are always reachable once authenticated.
   if (pathname === "/app" || pathname === "/app/screens") return true;
+  // Workflow action screens: reachable by the step's owner roles.
+  if (WORKFLOW_ACCESS[pathname]?.includes(role)) return true;
   const cat = categoryForPath(pathname);
   if (!cat) return false;                       // unmapped protected path → deny
   const allowed = ROLE_CATEGORIES[role] ?? [];

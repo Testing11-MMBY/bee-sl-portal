@@ -128,7 +128,7 @@ export function maskTx(t: string): string {
  * ------------------------------------------------------------------ */
 export type VerifyOutcome =
   | "active" | "expired" | "suspended" | "revoked" | "superseded"
-  | "mismatch" | "ledger-down" | "not-found";
+  | "mismatch" | "ledger-down" | "not-found" | "pending";
 
 export interface VerifyScenario {
   id: VerifyOutcome;
@@ -250,29 +250,55 @@ export const FABRIC_TX: FabricTxRow[] = [
 /* Reconciliation exceptions — the SAME fixture drives the summary counts and
  * the exception table, so health can never say "in sync" while these exist. */
 export interface ReconException {
-  id: string; certId: string; version: number; portalStatus: string; ledgerStatus: string;
+  id: string; certId: string; regId: string; manufacturer: string; model: string;
+  version: number; portalStatus: string; ledgerStatus: string;
   cause: string; owner: string; nextStep: string; correlationId: string;
 }
+// An UNANCHORED certificate is never called "Active": the portal shows a
+// pending/awaiting state, and public verification reads the SAME record so it
+// says "pending", not "not found" and not "authentic".
+// Each exception maps to a DISTINCT certificate and a DISTINCT category, so the
+// reconciliation counters never count the same record twice. RX-01 is the same
+// cert as the Retrying tx COR-89044 (retrying → awaiting anchor); RX-03 is a
+// submitted-but-unconfirmed cert (also awaiting); RX-02 is anchored but its
+// hash differs (a mismatch, not awaiting).
 export const RECON_EXCEPTIONS: ReconException[] = [
-  { id: "RX-01", certId: "BEE/CERT/RAC/2026/10022", version: 1, portalStatus: "Active (pending anchor)", ledgerStatus: "No confirmed transaction", cause: "Endorsement policy failure — peer1 unavailable", owner: "Registrations IT", nextStep: "Retry submission when peer1 recovers", correlationId: "COR-89044" },
-  { id: "RX-02", certId: "BEE/CERT/RAC/2026/10077", version: 1, portalStatus: "Active", ledgerStatus: "Hash differs", cause: "Portal document regenerated after anchoring", owner: "Enforcement Analytics", nextStep: "Investigate tampering; re-hash and re-anchor", correlationId: "COR-88820" },
-  { id: "RX-03", certId: "BEE/CERT/RAC/2026/10041", version: 2, portalStatus: "Active", ledgerStatus: "Submitted (not confirmed)", cause: "Portal marked active before ledger confirmation", owner: "Registrations IT", nextStep: "Await confirmation or roll back portal status", correlationId: "COR-89012" },
+  { id: "RX-01", certId: "BEE/CERT/RAC/2026/10022", regId: "BEE/RAC/2026/10022", manufacturer: "Breeze Air Systems Pvt. Ltd.", model: "CoolWave 1.5T (3★)", version: 1, portalStatus: "Pending first anchor", ledgerStatus: "Retrying — not yet confirmed", cause: "Endorsement policy failure — peer1 unavailable", owner: "Registrations IT", nextStep: "Retry submission when peer1 recovers", correlationId: "COR-89044" },
+  { id: "RX-02", certId: "BEE/CERT/RAC/2026/10077", regId: "BEE/RAC/2026/10077", manufacturer: "Unknown / suspect", model: "ArcticMax 1.5T", version: 1, portalStatus: "Active — under review", ledgerStatus: "Hash differs", cause: "Portal document regenerated after anchoring", owner: "Enforcement Analytics", nextStep: "Investigate tampering; re-hash and re-anchor", correlationId: "COR-88820" },
+  { id: "RX-03", certId: "BEE/CERT/RAC/2026/10058", regId: "BEE/RAC/2026/10058", manufacturer: "Frostline Cooling Co.", model: "Frostline 1T (3★)", version: 1, portalStatus: "Pending confirmation", ledgerStatus: "Submitted (not confirmed)", cause: "Portal marked active before ledger confirmation", owner: "Registrations IT", nextStep: "Await confirmation or roll back portal status", correlationId: "COR-89012" },
 ];
+
+/** The public-verification result for an unanchored/pending registration, from
+ *  the SAME reconciliation fixture the monitoring view uses. Returns undefined
+ *  when the registration is not a pending-anchor case. */
+export function pendingScenarioForReg(reg: string): VerifyScenario | undefined {
+  const ex = RECON_EXCEPTIONS.find(
+    (e) => e.regId.toLowerCase() === reg.trim().toLowerCase() && e.portalStatus.toLowerCase().includes("pending"),
+  );
+  if (!ex) return undefined;
+  return { id: "pending", label: "Verification pending", regId: ex.regId, manufacturer: ex.manufacturer, model: ex.model };
+}
 
 /** Health computed from the live tx + exception fixture (not hard-coded). */
 export function fabricHealth(txs: FabricTxRow[] = FABRIC_TX, exc: ReconException[] = RECON_EXCEPTIONS) {
+  const has = (e: ReconException, s: string) => e.ledgerStatus.toLowerCase().includes(s);
   const failed = txs.filter((t) => t.status === "Failed").length;
-  const retrying = txs.filter((t) => t.status === "Retrying").length;
-  const pending = txs.filter((t) => t.status === "Submitted").length;
+  const retrying = txs.filter((t) => t.status === "Retrying").length;         // COR-89044 (cert 10022)
   const confirmed = txs.filter((t) => t.status === "Confirmed").length;
-  const missing = exc.filter((e) => e.ledgerStatus.includes("No confirmed")).length;
-  const mismatch = exc.filter((e) => e.ledgerStatus.includes("differs")).length;
+  // Submitted-but-not-confirmed and missing come from the exception fixture and
+  // are DISTINCT certificates from the retrying tx — no record is counted twice.
+  const pending = exc.filter((e) => has(e, "submitted")).length;             // RX-03
+  const missing = exc.filter((e) => has(e, "no confirmed")).length;          // (none — retrying tx exists)
+  const mismatch = exc.filter((e) => has(e, "differ")).length;               // RX-02
+  // A single, unambiguous definition: "awaiting anchor" = every certificate not
+  // yet confirmed on the ledger (retrying + submitted-pending + missing tx).
+  const awaitingAnchor = retrying + pending + missing;
   const peerDown = FABRIC_NETWORK.peers.filter((p) => p.status !== "Up").length;
-  const anyProblem = failed + retrying + pending + exc.length > 0;
+  const anyProblem = failed + awaitingAnchor + mismatch > 0;
   const status: "Healthy" | "Degraded" | "Unavailable" =
     confirmed === 0 ? "Unavailable" : anyProblem || peerDown > 0 ? "Degraded" : "Healthy";
   const successRate = txs.length ? Math.round((confirmed / txs.length) * 1000) / 10 : 0;
-  return { status, failed, retrying, pending, confirmed, missing, mismatch, exceptions: exc.length, successRate, peerDown };
+  return { status, failed, retrying, pending, confirmed, missing, mismatch, awaitingAnchor, exceptions: exc.length, successRate, peerDown };
 }
 
 /* ------------------------------------------------------------------ *

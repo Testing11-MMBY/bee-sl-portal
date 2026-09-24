@@ -165,6 +165,21 @@ export const DICT: Record<string, Entry> = {
   "app.kpi.pApplications": { en: "Applications in progress", hi: "प्रगति पर आवेदन" },
   "app.kpi.pQr": { en: "QR batches this quarter", hi: "इस तिमाही QR बैच" },
   "app.kpi.pTickets": { en: "Open support tickets", hi: "खुले सहायता टिकट" },
+  // IAME (independent assessor)
+  "app.iameSummary": { en: "Your assessor workspace — {modules} areas for the model scrutiny and assessment tasks assigned to you.", hi: "आपका मूल्यांकनकर्ता कार्यक्षेत्र — {modules} क्षेत्र, आपको सौंपे गए मॉडल जाँच एवं मूल्यांकन कार्यों हेतु।" },
+  "app.kpi.iAssigned": { en: "Assessments assigned", hi: "सौंपे गए मूल्यांकन" },
+  "app.kpi.iScrutiny": { en: "Scrutinies in progress", hi: "प्रगति पर जाँच" },
+  "app.kpi.iReports": { en: "Reports submitted", hi: "प्रस्तुत रिपोर्ट" },
+  // SDA (state designated agency)
+  "app.sdaSummary": { en: "Your state enforcement workspace — {modules} areas for sampling, market surveillance and enforcement in your jurisdiction.", hi: "आपका राज्य प्रवर्तन कार्यक्षेत्र — {modules} क्षेत्र, आपके क्षेत्राधिकार में नमूनाकरण, बाज़ार निगरानी एवं प्रवर्तन हेतु।" },
+  "app.kpi.sCases": { en: "Enforcement cases", hi: "प्रवर्तन प्रकरण" },
+  "app.kpi.sSamples": { en: "Samples drawn", hi: "लिए गए नमूने" },
+  "app.kpi.sChecks": { en: "Market checks due", hi: "बाज़ार जाँच देय" },
+  // Testing laboratory
+  "app.labSummary": { en: "Your testing workspace — {modules} areas for the sample tests and challenge-test assignments allocated to your lab.", hi: "आपका परीक्षण कार्यक्षेत्र — {modules} क्षेत्र, आपकी प्रयोगशाला को आवंटित नमूना परीक्षण एवं चुनौती-परीक्षण हेतु।" },
+  "app.kpi.lAssignments": { en: "Test assignments", hi: "परीक्षण असाइनमेंट" },
+  "app.kpi.lTests": { en: "Tests in progress", hi: "प्रगति पर परीक्षण" },
+  "app.kpi.lReports": { en: "Reports issued", hi: "जारी रिपोर्ट" },
   "app.allScreensTitle": { en: "All screens", hi: "सभी स्क्रीन" },
   "app.allScreensSub": { en: "The complete set of {total} internal screens from DDD Annex A.1, across {modules} modules.", hi: "डीडीडी अनुबंध A.1 की सभी {total} आंतरिक स्क्रीन, {modules} मॉड्यूल में।" },
   "app.myAccessOnly": { en: "My access only", hi: "केवल मेरी पहुँच" },

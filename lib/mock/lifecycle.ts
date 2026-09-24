@@ -5,6 +5,8 @@
  * on the others — the same object flowing through the pipeline.
  */
 
+import { RoleKey } from "@/lib/roles";
+
 export type Stage =
   | "fee_due"
   | "iame_scrutiny"
@@ -135,7 +137,24 @@ export interface WorkflowTask {
   overdue: boolean;
   actionModule: string;
   actionScreen: string;
+  /** Roles that can act on this task (the stage owner). Drives the personal
+   *  inbox filter so a role never sees — or clicks into — another queue's work. */
+  ownerRoles: RoleKey[];
 }
+
+/** Which role(s) own each workflow stage. The personal inbox and the route
+ *  guard both read this, so a visible task always resolves to a screen the
+ *  role can open. */
+export const STAGE_OWNERS: Record<Stage, RoleKey[]> = {
+  fee_due: ["finance"],
+  iame_scrutiny: ["iame"],
+  bee_scrutiny: ["reviewer"],
+  approval: ["director", "secretary"],
+  rating: ["programme"],
+  label: ["programme"],
+  active: [],
+  rejected: [],
+};
 
 const STAGE_SCREEN: Record<Stage, { module: string; screen: string; verb: string }> = {
   fee_due: { module: "model-label", screen: "model-payment", verb: "Confirm fee for" },
@@ -167,6 +186,7 @@ export function deriveTasks(apps: ModelApplication[]): WorkflowTask[] {
         overdue: a.returned || i % 5 === 0,
         actionModule: s.module,
         actionScreen: s.screen,
+        ownerRoles: STAGE_OWNERS[a.stage],
       };
     });
 }
