@@ -20,11 +20,12 @@ import {
 const SEED = PRIMARY_CERT;
 const V1 = SEED.versions[0];
 
-export function CertificateWorkspace() {
+export function CertificateWorkspace({ view }: { view?: "ledger" | "history" | "actions" } = {}) {
   const { role } = useRole();
   const officer = roleByKey(role);
   const { state, current, dispatch } = useCert();
-  const [tab, setTab] = useState<"ledger" | "history" | "actions">("ledger");
+  const [localTab, setTab] = useState<"ledger" | "history" | "actions">("ledger");
+  const tab = view ?? localTab;   // controlled when the parent supplies a view
 
   const s = state.issuance;
   const hashed = ["HASH_CALCULATED", "LEDGER_SUBMITTED", "RETRYING", "FAILED", "LEDGER_CONFIRMED", "ACTIVE"].includes(s);
@@ -53,9 +54,10 @@ export function CertificateWorkspace() {
 
   return (
     <div className="space-y-space-md">
-      <BlockchainSimulationNotice />
+      {!view && <BlockchainSimulationNotice />}
 
-      {/* sub-tabs */}
+      {/* sub-tabs (only when self-navigating; hidden when the parent controls the view) */}
+      {!view && (
       <div className="flex gap-1 border-b border-border-subtle">
         {([["ledger", "Ledger & issuance", "account_tree"], ["history", "Version history", "manage_history"], ["actions", "Lifecycle actions", "gavel"]] as const).map(([id, label, icon]) => (
           <button key={id} type="button" onClick={() => setTab(id)} className={`flex items-center gap-1.5 px-space-sm py-2.5 font-label-md text-label-md whitespace-nowrap border-b-2 transition-colors ${tab === id ? "border-primary text-primary font-semibold" : "border-transparent text-on-surface-variant hover:text-on-surface"}`}>
@@ -63,6 +65,7 @@ export function CertificateWorkspace() {
           </button>
         ))}
       </div>
+      )}
 
       {tab === "ledger" && (
         <div className="space-y-space-md">
@@ -78,7 +81,7 @@ export function CertificateWorkspace() {
                 <KV k="Star rating" v={`${SEED.stars}★`} />
                 <KV k="Valid" v={`${SEED.validFrom} → ${SEED.validTo}`} />
                 <KV k="Issuing authority" v="Bureau of Energy Efficiency" />
-                <KV k="Document" v={hashed ? `BEE_CERT_RAC_2026_10016_v1.pdf` : "pending generation"} />
+                <KV k="Document" v={hashed ? `BEE_CERT_RAC_2026_10016_v${active && current ? current.version : 1}.pdf` : "pending generation"} />
               </div>
             </Card>
 

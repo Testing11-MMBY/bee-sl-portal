@@ -21,9 +21,9 @@ interface Item {
   who: Who[]; cert?: boolean; href: string;
 }
 const ITEMS: Item[] = [
-  { id: "APP-2026-05016", kind: "Model — Director approval", subject: "Nova Cool · FrostMax 1.5T (5★)", requestedBy: "A. Kapoor (Programme)", date: "Today 08:40", sla: "6h left", who: ["director"], cert: true, href: "/app/model-label/label-preview" },
-  { id: "APP-2026-05016", kind: "Model — Secretary approval", subject: "Nova Cool · FrostMax 1.5T (5★)", requestedBy: "Director (BEE)", date: "Today 09:05", sla: "1d left", who: ["secretary"], cert: true, href: "/app/model-label/label-preview" },
-  { id: "WDR-2026-0221", kind: "Withdrawal approval", subject: "AquaBreeze 2T — voluntary withdrawal", requestedBy: "R. Menon (Reviewer)", date: "Yesterday 16:20", sla: "2d left", who: ["director", "reviewer"], href: "/app/registrations/record" },
+  { id: "APP-2026-05016", kind: "Model — Director approval", subject: "Nova Cool · FrostMax 1.5T (5★)", requestedBy: "A. Kapoor (Programme)", date: "24 Sep 2026, 08:40", sla: "6h left", who: ["director"], cert: true, href: "/app/model-label/label-preview" },
+  { id: "APP-2026-05016", kind: "Model — Secretary approval", subject: "Nova Cool · FrostMax 1.5T (5★)", requestedBy: "Director (BEE)", date: "24 Sep 2026, 09:05", sla: "1d left", who: ["secretary"], cert: true, href: "/app/model-label/label-preview" },
+  { id: "WDR-2026-0221", kind: "Withdrawal approval", subject: "AquaBreeze 2T — voluntary withdrawal", requestedBy: "R. Menon (Reviewer)", date: "23 Sep 2026, 16:20", sla: "2d left", who: ["director", "reviewer"], href: "/app/registrations/record" },
   { id: "SP-Q2-118", kind: "Sample-plan approval", subject: "Q2 enforcement sampling plan", requestedBy: "S. Rao (SDA)", date: "22 Sep 10:00", sla: "SLA breached", who: ["reviewer", "director"], href: "/app/enforcement/case" },
   { id: "BRD-2026-0455", kind: "Brand approval", subject: "PolarPro brand registration", requestedBy: "Programme Officer", date: "21 Sep 14:30", sla: "3d left", who: ["reviewer"], href: "/app/agency-brand/brand-registration" },
   { id: "ENF-2026-0417", kind: "Enforcement closure", subject: "FrostMax — revocation decision", requestedBy: "R. Menon (SDA)", date: "18 Oct 11:00", sla: "1d left", who: ["director", "secretary"], href: "/app/enforcement/case" },

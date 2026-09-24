@@ -3,9 +3,25 @@
 import Link from "next/link";
 import { Icon } from "@/components/ui/Icon";
 import { Module, Screen } from "@/lib/screens";
-import { ACCESS_CODES, splitCodes } from "@/lib/roles";
+import { ACCESS_CODES, RoleKey, isExternalRole, splitCodes } from "@/lib/roles";
+import { canRoleAccessPath } from "@/lib/categories";
 import { useRole } from "./RoleContext";
 import { useLang } from "@/components/i18n/LangProvider";
+
+/**
+ * Effective access codes for a screen. The Annex-A permission tuples cover the
+ * 8 internal roles; external partner roles get a scoped VIEW/DOWNLOAD grant on
+ * exactly the screens their navigation policy exposes (canRoleAccessPath), so
+ * a partner menu link never lands on a "No access" dead-end. Scoping to their
+ * own organisation is simulated and flagged by the RouteGuard banner.
+ */
+export function accessCodesFor(role: RoleKey, module: Module, screen: Screen): string[] {
+  const codes = splitCodes(screen.perms[role] ?? "—");
+  if (codes.length === 0 && isExternalRole(role) && canRoleAccessPath(role, `/app/${module.id}/${screen.id}`)) {
+    return ["V", "D"];
+  }
+  return codes;
+}
 
 /* ------------------------------------------------------------------ *
  * Small shared building blocks
@@ -218,7 +234,7 @@ function DashboardBody({ screen }: { screen: Screen }) {
           rows={[
             ["APP-2026-04821", "1.5T Split AC — Daikin", "R. Menon", <Status key="1" label="In review" tone={INFO} />, "2h ago"],
             ["APP-2026-04820", "Frost-free 260L — Voltas", "S. Iyer", <Status key="2" label="Approved" tone={OK} />, "5h ago"],
-            ["APP-2026-04817", "BLDC Fan — Havells", "A. Khan", <Status key="3" label="Returned" tone={WARN} />, "Yesterday"],
+            ["APP-2026-04817", "BLDC Fan — Havells", "A. Khan", <Status key="3" label="Returned" tone={WARN} />, "23 Sep 2026"],
             ["APP-2026-04811", "LED Panel — Wipro", "P. Rao", <Status key="4" label="Overdue" tone={BAD} />, "2d ago"],
           ]}
         />
@@ -301,7 +317,7 @@ function FormBody({ screen }: { screen: Screen }) {
           </ol>
         </Card>
         <Card title="Draft">
-          <p className="font-body-sm text-body-sm text-on-surface-variant">Auto-saved 2 min ago. Mandatory fields are validated on submit.</p>
+          <p className="font-body-sm text-body-sm text-on-surface-variant">Draft auto-saved. Mandatory fields are validated on submit.</p>
           <button className="mt-space-sm w-full bg-surface-container text-on-surface py-2 rounded-lg font-label-md text-label-md flex items-center justify-center gap-1"><Icon name="save" size={18} /> Save draft</button>
         </Card>
       </div>
@@ -651,7 +667,7 @@ export function ScreenChrome({
 }) {
   const { role } = useRole();
   const { t } = useLang();
-  const codes = splitCodes(screen.perms[role] ?? "—");
+  const codes = accessCodesFor(role, module, screen);
 
   return (
     <div className="p-space-md lg:p-space-lg space-y-space-md">
@@ -700,7 +716,7 @@ export function ScreenChrome({
  * ------------------------------------------------------------------ */
 export function ScreenScaffold({ module, screen }: { module: Module; screen: Screen }) {
   const { role } = useRole();
-  const codes = splitCodes(screen.perms[role] ?? "—");
+  const codes = accessCodesFor(role, module, screen);
   const Body = BODIES[screen.archetype] ?? TableBody;
   return (
     <ScreenChrome module={module} screen={screen} actions={<ActionBar codes={codes} />}>

@@ -4,17 +4,21 @@ import { useState } from "react";
 import { Icon } from "@/components/ui/Icon";
 import { Module, Screen } from "@/lib/screens";
 import { Card, ScreenChrome, Status, OK, WARN, BAD } from "@/components/app/ScreenScaffold";
-import { FABRIC_NETWORK, FABRIC_META, FABRIC_TX, FabricTxRow, SIM_LABEL_TEXT, PRIMARY_CERT } from "@/lib/mock/certificate";
-import { FabricTransactionDrawer, ReconciliationSummary, ReconRow } from "./kit";
+import {
+  FABRIC_NETWORK, FABRIC_META, FABRIC_TX, FabricTxRow, SIM_LABEL_TEXT,
+  RECON_EXCEPTIONS, ReconException, fabricHealth,
+} from "@/lib/mock/certificate";
+import { FabricTransactionDrawer } from "./kit";
 
 /* ================================================================== *
- * Fabric & integration monitoring (section 12) — replaces the generic
- * integration-correlation template.
+ * Fabric & integration monitoring — the health summary and the
+ * reconciliation counts are COMPUTED from the same tx + exception
+ * fixture as the tables, so the screen can never say "in sync" while
+ * exceptions exist.
  * ================================================================== */
 
-const TX_TONE: Record<string, string> = {
-  Confirmed: OK, Submitted: WARN, Retrying: WARN, Failed: BAD,
-};
+const TX_TONE: Record<string, string> = { Confirmed: OK, Submitted: WARN, Retrying: WARN, Failed: BAD };
+const HEALTH_TONE: Record<string, string> = { Healthy: OK, Degraded: WARN, Unavailable: BAD };
 
 export function FabricMonitoring({ module, screen }: { module: Module; screen: Screen }) {
   const [status, setStatus] = useState("all");
@@ -22,70 +26,67 @@ export function FabricMonitoring({ module, screen }: { module: Module; screen: S
   const [q, setQ] = useState("");
   const [selTx, setSelTx] = useState<FabricTxRow | null>(null);
 
-  const RECON = {
-    counts: { portal: 5, confirmed: 4, missing: 1, mismatch: 1, pending: 1, failed: 0, lastRun: "2 min ago" },
-    exceptions: [
-      { label: "Missing ledger record", ref: "BEE/CERT/RAC/2026/10022 · v1", kind: "Portal certificate exists, but no confirmed ledger transaction" },
-      { label: "Hash mismatch", ref: "BEE/CERT/RAC/2026/10077 · v1", kind: "Portal and ledger hashes differ" },
-      { label: "Status lag", ref: `${PRIMARY_CERT.certId} · v2`, kind: "Ledger event exists, but portal status is not updated" },
-      { label: "Premature active", ref: "BEE/CERT/RAC/2026/10041 · v2", kind: "Portal shows Active while transaction is still pending" },
-    ] as ReconRow[],
-  };
-
+  const H = fabricHealth();
   const rows = FABRIC_TX.filter((r) =>
     (status === "all" || r.status === status) &&
     (event === "all" || r.event === event) &&
     (q === "" || r.ref.toLowerCase().includes(q.toLowerCase()) || r.correlationId.toLowerCase().includes(q.toLowerCase()))
   );
-
-  const net = FABRIC_NETWORK;
-  const netTone = net.status === "Healthy" ? OK : net.status === "Degraded" ? WARN : BAD;
+  function openException(x: ReconException) {
+    const tx = FABRIC_TX.find((t) => t.correlationId === x.correlationId);
+    if (tx) setSelTx(tx);
+  }
 
   return (
     <ScreenChrome module={module} screen={screen} subtitle="Hyperledger Fabric & integration monitoring">
       <div className="flex items-start gap-space-sm bg-navy-subtle border border-navy-dark/20 rounded-xl p-space-sm">
         <Icon name="info" size={18} className="text-navy-dark shrink-0 mt-0.5" />
-        <p className="font-body-sm text-body-sm text-on-surface"><span className="font-semibold">{SIM_LABEL_TEXT}</span> Metrics below are simulated for the prototype.</p>
+        <p className="font-body-sm text-body-sm text-on-surface"><span className="font-semibold">{SIM_LABEL_TEXT}</span> The health summary is derived from the transaction and exception fixture below.</p>
       </div>
 
-      {/* Network + KPIs */}
+      {/* Health banner (computed) */}
+      <div className={`rounded-xl p-space-md flex flex-col md:flex-row md:items-center gap-space-sm ${H.status === "Healthy" ? "bg-success-light" : H.status === "Degraded" ? "bg-solar-gold-light" : "bg-error-container"}`}>
+        <div className="flex items-center gap-space-sm">
+          <Icon name={H.status === "Healthy" ? "check_circle" : H.status === "Degraded" ? "warning" : "cloud_off"} size={24} className={H.status === "Healthy" ? "text-success" : H.status === "Degraded" ? "text-solar-gold-dark" : "text-error"} fill />
+          <div>
+            <div className="font-title-md text-title-md text-on-surface font-semibold">Network {H.status}</div>
+            <div className="font-label-sm text-label-sm text-on-surface-variant">
+              {H.status === "Degraded" ? `${H.exceptions} reconciliation exception(s), ${H.retrying} retrying, ${H.mismatch} hash mismatch, ${H.pending} pending — not fully in sync.` : H.status === "Healthy" ? "All transactions confirmed; portal and ledger reconcile." : "No confirmed transactions — ledger unreachable."}
+            </div>
+          </div>
+        </div>
+        <div className="md:ml-auto font-label-sm text-label-sm text-on-surface-variant">
+          <span className="font-semibold text-on-surface">States:</span> Healthy = all confirmed &amp; peers up · Degraded = any failure/retry/pending/mismatch/peer down · Unavailable = no confirmations
+        </div>
+      </div>
+
+      {/* KPIs — all computed */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-space-md">
-        <KPI label="Fabric network" value={net.status} icon="lan" tone={net.status === "Healthy" ? "text-success" : "text-error"} chip={<Status label={net.status} tone={netTone} />} />
-        <KPI label="Tx success rate" value={`${net.successRate}%`} icon="check_circle" tone="text-success" />
-        <KPI label="Failed (24h)" value={String(net.failed24h)} icon="error" tone="text-error" />
-        <KPI label="Pending anchoring" value={String(net.pendingQueue)} icon="hourglass_top" tone="text-solar-gold-dark" />
-        <KPI label="Avg ledger response" value={`${net.avgResponseMs} ms`} icon="speed" tone="text-primary" />
-        <KPI label="Endorsement failures" value={String(net.endorsementFailures24h)} icon="report" tone="text-solar-gold-dark" />
-        <KPI label="Last committed block" value={`#${net.lastBlock.toLocaleString("en-IN")}`} icon="deployed_code" tone="text-on-surface" />
-        <KPI label="Retry queue" value={String(FABRIC_TX.filter((r) => r.status === "Retrying").length)} icon="refresh" tone="text-solar-gold-dark" />
+        <KPI label="Fabric network" value={H.status} icon="lan" tone={H.status === "Healthy" ? "text-success" : H.status === "Degraded" ? "text-solar-gold-dark" : "text-error"} chip={<Status label={H.status} tone={HEALTH_TONE[H.status]} />} />
+        <KPI label="Tx success rate" value={`${H.successRate}%`} icon="check_circle" tone={H.successRate >= 99 ? "text-success" : "text-solar-gold-dark"} />
+        <KPI label="Retrying / failed" value={`${H.retrying} / ${H.failed}`} icon="error" tone={H.retrying + H.failed ? "text-error" : "text-success"} />
+        <KPI label="Missing ledger" value={String(H.missing)} icon="link_off" tone={H.missing ? "text-error" : "text-success"} />
+        <KPI label="Hash mismatches" value={String(H.mismatch)} icon="report" tone={H.mismatch ? "text-error" : "text-success"} />
+        <KPI label="Pending anchoring" value={String(H.pending + H.missing)} icon="hourglass_top" tone="text-solar-gold-dark" />
+        <KPI label="Avg ledger response" value={`${FABRIC_NETWORK.avgResponseMs} ms`} icon="speed" tone="text-primary" />
+        <KPI label="Last committed block" value={`#${FABRIC_NETWORK.lastBlock.toLocaleString("en-IN")}`} icon="deployed_code" tone="text-on-surface" />
       </div>
 
       {/* Network detail */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-space-md">
-        <Card title="Network">
-          <div className="space-y-space-sm">
-            <Row label="Channel" value={FABRIC_META.channel} />
-            <Row label="Chaincode" value={`${FABRIC_META.chaincode} ${FABRIC_META.chaincodeVersion}`} />
-            <Row label="Ordering service" value={net.orderer} />
-            <Row label="Reconciliation" value={net.reconciliation} />
-          </div>
-          <div className="mt-space-sm pt-space-sm border-t border-border-subtle">
-            <div className="font-label-sm text-label-sm text-on-surface-variant mb-1.5">Peers</div>
-            <div className="flex flex-wrap gap-1.5">
-              {net.peers.map((p) => (
-                <span key={p.name} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-success-light text-success font-label-sm text-label-sm"><Icon name="circle" size={8} className="text-success" /> {p.name}</span>
-              ))}
-            </div>
-          </div>
-        </Card>
-
-        <Card title="Portal ↔ ledger reconciliation">
-          <div className="flex items-center gap-space-sm bg-success-light text-success rounded-lg p-space-sm">
-            <Icon name="sync" size={20} /> <span className="font-body-sm text-body-sm font-medium">{net.reconciliation}</span>
-          </div>
-          <p className="font-label-sm text-label-sm text-on-surface-variant mt-space-sm">Every certificate event in the portal is expected to have a matching confirmed ledger transaction. Mismatches are surfaced in the failed / retrying rows below.</p>
-        </Card>
-      </div>
+      <Card title="Network">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-space-md">
+          <Row label="Channel" value={FABRIC_META.channel} />
+          <Row label="Chaincode" value={`${FABRIC_META.chaincode} ${FABRIC_META.chaincodeVersion}`} />
+          <Row label="Ordering service" value={FABRIC_NETWORK.orderer} />
+          <Row label="Peers" value={`${FABRIC_NETWORK.peers.filter((p) => p.status === "Up").length}/${FABRIC_NETWORK.peers.length} up`} />
+        </div>
+        <div className="mt-space-sm pt-space-sm border-t border-border-subtle flex flex-wrap gap-1.5">
+          {FABRIC_NETWORK.peers.map((p) => {
+            const up = p.status === "Up";
+            return <span key={p.name} className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-label-sm text-label-sm ${up ? "bg-success-light text-success" : "bg-solar-gold-light text-solar-gold-dark"}`}><Icon name="circle" size={8} /> {p.name} · {p.status}</span>;
+          })}
+        </div>
+      </Card>
 
       {/* Transaction table + filters */}
       <Card title="Ledger transactions">
@@ -126,17 +127,48 @@ export function FabricMonitoring({ module, screen }: { module: Module; screen: S
                   <td className="py-2 pr-space-md font-label-sm text-label-sm text-error max-w-[200px] truncate" title={r.error}>{r.error === "—" ? "—" : r.error}</td>
                 </tr>
               ))}
-              {rows.length === 0 && (
-                <tr><td colSpan={11} className="py-space-md text-center font-body-sm text-body-sm text-on-surface-variant">No transactions match the filters.</td></tr>
-              )}
             </tbody>
           </table>
         </div>
         <p className="font-label-sm text-label-sm text-on-surface-variant mt-space-sm">Click a transaction row for full endorsement, block and audit detail.</p>
       </Card>
 
-      <Card title="Portal ↔ ledger reconciliation">
-        <ReconciliationSummary counts={RECON.counts} exceptions={RECON.exceptions} onOpen={() => { /* opens affected cert/tx in a real system */ }} />
+      {/* Reconciliation — counts computed from the same exception fixture */}
+      <Card title="Portal ↔ ledger reconciliation" action={<Status label={H.exceptions ? `${H.exceptions} exceptions` : "In sync"} tone={H.exceptions ? WARN : OK} />}>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-space-sm mb-space-md">
+          {[
+            { l: "Confirmed on ledger", v: H.confirmed, tone: "text-success" },
+            { l: "Missing ledger", v: H.missing, tone: "text-error" },
+            { l: "Hash mismatches", v: H.mismatch, tone: "text-error" },
+            { l: "Pending", v: H.pending, tone: "text-solar-gold-dark" },
+            { l: "Retrying", v: H.retrying, tone: "text-solar-gold-dark" },
+            { l: "Exceptions", v: H.exceptions, tone: "text-error" },
+          ].map((k) => (
+            <div key={k.l} className="bg-surface-container-low rounded-lg p-space-sm text-center">
+              <div className={`font-headline-sm text-headline-sm font-bold ${k.tone}`}>{k.v}</div>
+              <div className="font-label-sm text-label-sm text-on-surface-variant leading-tight">{k.l}</div>
+            </div>
+          ))}
+        </div>
+        <div className="overflow-x-auto app-scroll">
+          <table className="w-full text-left border-collapse">
+            <thead><tr className="border-b border-border-subtle">{["Certificate", "Portal status", "Ledger status", "Cause", "Owner", "Next step", ""].map((h) => <th key={h} className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide py-2 pr-space-md whitespace-nowrap">{h}</th>)}</tr></thead>
+            <tbody>
+              {RECON_EXCEPTIONS.map((x) => (
+                <tr key={x.id} className="border-b border-border-subtle/60">
+                  <td className="py-2.5 pr-space-md font-body-sm text-body-sm text-on-surface whitespace-nowrap">{x.certId} · v{x.version}</td>
+                  <td className="py-2.5 pr-space-md font-body-sm text-body-sm text-on-surface">{x.portalStatus}</td>
+                  <td className="py-2.5 pr-space-md"><Status label={x.ledgerStatus} tone={BAD} /></td>
+                  <td className="py-2.5 pr-space-md font-label-sm text-label-sm text-on-surface-variant max-w-[220px]">{x.cause}</td>
+                  <td className="py-2.5 pr-space-md font-body-sm text-body-sm text-on-surface-variant whitespace-nowrap">{x.owner}</td>
+                  <td className="py-2.5 pr-space-md font-label-sm text-label-sm text-on-surface-variant max-w-[220px]">{x.nextStep}</td>
+                  <td className="py-2.5 pr-space-md"><button type="button" onClick={() => openException(x)} className="font-label-sm text-label-sm text-primary hover:underline whitespace-nowrap">Open evidence</button></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p className="font-label-sm text-label-sm text-on-surface-variant mt-space-sm">Opening an exception shows its matching ledger transaction. No destructive auto-fix in this prototype.</p>
       </Card>
 
       <FabricTransactionDrawer tx={selTx} onClose={() => setSelTx(null)} />
@@ -148,24 +180,14 @@ function fmt(iso: string): string {
   try { return new Date(iso).toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }); }
   catch { return iso; }
 }
-
 function KPI({ label, value, icon, tone, chip }: { label: string; value: string; icon: string; tone: string; chip?: React.ReactNode }) {
   return (
     <div className="bg-surface-card rounded-xl shadow-sm p-space-md">
       <div className="flex items-center justify-between"><span className="font-label-sm text-label-sm text-on-surface-variant">{label}</span><Icon name={icon} size={18} className={tone} /></div>
-      <div className="flex items-center gap-space-sm mt-1">
-        <div className={`font-headline-sm text-headline-sm font-bold ${tone}`}>{value}</div>
-        {chip}
-      </div>
+      <div className="flex items-center gap-space-sm mt-1"><div className={`font-headline-sm text-headline-sm font-bold ${tone}`}>{value}</div>{chip}</div>
     </div>
   );
 }
-
 function Row({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-start justify-between gap-space-sm">
-      <span className="font-label-sm text-label-sm text-on-surface-variant shrink-0">{label}</span>
-      <span className="font-label-md text-label-md text-on-surface font-medium text-right">{value}</span>
-    </div>
-  );
+  return <div className="flex items-start justify-between gap-space-sm"><span className="font-label-sm text-label-sm text-on-surface-variant shrink-0">{label}</span><span className="font-label-md text-label-md text-on-surface font-medium text-right">{value}</span></div>;
 }

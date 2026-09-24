@@ -15,10 +15,10 @@ import { ROLES } from "@/lib/roles";
 
 interface User { name: string; email: string; role: string; org: string; status: "Active" | "Suspended"; lastActive: string; }
 const USERS: User[] = [
-  { name: "R. Menon", email: "r.menon@bee.gov.in", role: "reviewer", org: "BEE HQ", status: "Active", lastActive: "Today 09:10" },
-  { name: "A. Kapoor", email: "a.kapoor@bee.gov.in", role: "programme", org: "BEE North", status: "Active", lastActive: "Today 08:42" },
-  { name: "S. Rao", email: "s.rao@sda.mh.gov.in", role: "sda", org: "SDA Maharashtra", status: "Active", lastActive: "Yesterday 17:20" },
-  { name: "Nova Cool (portal)", email: "sl@novacool.example", role: "manufacturer", org: "Nova Cool Appliances Ltd.", status: "Active", lastActive: "Today 07:05" },
+  { name: "R. Menon", email: "r.menon@bee.gov.in", role: "reviewer", org: "BEE HQ", status: "Active", lastActive: "24 Sep 2026, 09:10" },
+  { name: "A. Kapoor", email: "a.kapoor@bee.gov.in", role: "programme", org: "BEE North", status: "Active", lastActive: "24 Sep 2026, 08:42" },
+  { name: "S. Rao", email: "s.rao@sda.mh.gov.in", role: "sda", org: "SDA Maharashtra", status: "Active", lastActive: "23 Sep 2026, 17:20" },
+  { name: "Nova Cool (portal)", email: "sl@novacool.example", role: "manufacturer", org: "Nova Cool Appliances Ltd.", status: "Active", lastActive: "24 Sep 2026, 07:05" },
   { name: "T. Iyer", email: "t.iyer@bee.gov.in", role: "finance", org: "BEE HQ", status: "Suspended", lastActive: "12 Sep" },
 ];
 
@@ -30,9 +30,9 @@ const DELEGATIONS: Delegation[] = [
 
 interface Review { user: string; role: string; lastUsed: string; risk: "Low" | "Review"; }
 const REVIEWS: Review[] = [
-  { user: "T. Iyer", role: "BEE Finance", lastUsed: "12 days ago", risk: "Review" },
-  { user: "S. Rao", role: "SDA Maharashtra", lastUsed: "1 day ago", risk: "Low" },
-  { user: "A. Kapoor", role: "Programme Officer", lastUsed: "Today", risk: "Low" },
+  { user: "T. Iyer", role: "BEE Finance", lastUsed: "12 Sep 2026", risk: "Review" },
+  { user: "S. Rao", role: "SDA Maharashtra", lastUsed: "23 Sep 2026", risk: "Low" },
+  { user: "A. Kapoor", role: "Programme Officer", lastUsed: "24 Sep 2026", risk: "Low" },
 ];
 
 const roleName = (k: string) => ROLES.find((r) => r.key === k)?.name ?? k;

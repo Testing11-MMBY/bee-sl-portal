@@ -1,4 +1,4 @@
-import { RoleKey } from "./roles";
+import { RoleKey, isExternalRole } from "./roles";
 
 /**
  * Two-level console navigation (DDD IA revision).
@@ -10,15 +10,26 @@ import { RoleKey } from "./roles";
  * /app/[module]/[screen] page; nothing is removed. The complete catalogue
  * stays reachable at /app/screens for reference only.
  *
- * Consolidated workspaces (agency/brand/model, QR batch, enforcement case,
- * ticket) and the redesigned AI pages are layered on top of these entry
- * points in later phases; for now each item opens its representative screen.
+ * Visibility is decided at TWO levels:
+ *   1. Category grant — ROLE_CATEGORIES lists the categories a role may open.
+ *   2. Item scope — each item may narrow visibility further. External partner
+ *      roles (manufacturer, agency, IAME, SDA, laboratory) see ONLY the items
+ *      whose `ext` list names them; they never inherit the internal officer
+ *      items in a shared category. Internal roles see every item in a granted
+ *      category unless the item's `hideFrom` names them.
+ *
+ * The same policy drives the sidebar, the route guard and the automated audit
+ * (scripts/access-audit.*), so the menu and the guard can never disagree.
  */
 export interface CategoryItem {
   en: string;
   hi: string;
   href: string;
   icon: string;
+  /** External partner roles allowed to see this item. Absent ⇒ internal-only. */
+  ext?: RoleKey[];
+  /** Internal roles explicitly denied this item (rare). */
+  hideFrom?: RoleKey[];
 }
 
 export interface Category {
@@ -29,6 +40,11 @@ export interface Category {
   items: CategoryItem[];
 }
 
+/** All external partner roles — the default `ext` for partner-facing items. */
+const ALL_EXTERNAL: RoleKey[] = ["manufacturer", "agency", "iame", "sda", "laboratory"];
+/** Manufacturer + agency together own the registration/label/production journey. */
+const MFR_AGENCY: RoleKey[] = ["manufacturer", "agency"];
+
 export const CATEGORIES: Category[] = [
   {
     id: "home",
@@ -36,8 +52,8 @@ export const CATEGORIES: Category[] = [
     hi: "मुख्य",
     icon: "home",
     items: [
-      { en: "Dashboard", hi: "डैशबोर्ड", href: "/app", icon: "dashboard" },
-      { en: "My work", hi: "मेरा कार्य", href: "/app/workflow/personal-inbox", icon: "inbox" },
+      { en: "Dashboard", hi: "डैशबोर्ड", href: "/app", icon: "dashboard", ext: ALL_EXTERNAL },
+      { en: "My work", hi: "मेरा कार्य", href: "/app/workflow/personal-inbox", icon: "inbox", ext: ALL_EXTERNAL },
       { en: "Approvals", hi: "अनुमोदन", href: "/app/workflow/my-approvals", icon: "task_alt" },
       { en: "SLA and escalations", hi: "एसएलए एवं एस्केलेशन", href: "/app/workflow/escalation-dashboard", icon: "priority_high" },
     ],
@@ -49,12 +65,12 @@ export const CATEGORIES: Category[] = [
     icon: "how_to_reg",
     items: [
       { en: "Organisations and users", hi: "संगठन एवं उपयोगकर्ता", href: "/app/identity/organisation-users", icon: "groups" },
-      { en: "Agency registrations", hi: "एजेंसी पंजीकरण", href: "/app/registrations/record", icon: "domain" },
-      { en: "Brands", hi: "ब्रांड", href: "/app/agency-brand/brand-registration", icon: "sell" },
-      { en: "Model applications", hi: "मॉडल आवेदन", href: "/app/model-label/new-model-application", icon: "note_add" },
-      { en: "Approved models", hi: "अनुमोदित मॉडल", href: "/app/model-label/model-dashboard", icon: "verified" },
-      { en: "Renewals and changes", hi: "नवीनीकरण एवं परिवर्तन", href: "/app/model-label/renewal-or-degradation", icon: "autorenew" },
-      { en: "Withdrawals", hi: "वापसी", href: "/app/withdrawal/brand-withdrawal", icon: "cancel" },
+      { en: "Agency registrations", hi: "एजेंसी पंजीकरण", href: "/app/registrations/record", icon: "domain", ext: ["agency"] },
+      { en: "Brands", hi: "ब्रांड", href: "/app/agency-brand/brand-registration", icon: "sell", ext: MFR_AGENCY },
+      { en: "Model applications", hi: "मॉडल आवेदन", href: "/app/model-label/new-model-application", icon: "note_add", ext: MFR_AGENCY },
+      { en: "Approved models", hi: "अनुमोदित मॉडल", href: "/app/model-label/model-dashboard", icon: "verified", ext: MFR_AGENCY },
+      { en: "Renewals and changes", hi: "नवीनीकरण एवं परिवर्तन", href: "/app/model-label/renewal-or-degradation", icon: "autorenew", ext: MFR_AGENCY },
+      { en: "Withdrawals", hi: "वापसी", href: "/app/withdrawal/brand-withdrawal", icon: "cancel", ext: MFR_AGENCY },
     ],
   },
   {
@@ -63,10 +79,10 @@ export const CATEGORIES: Category[] = [
     hi: "लेबल एवं उत्पादन",
     icon: "label",
     items: [
-      { en: "Labels and certificates", hi: "लेबल एवं प्रमाणपत्र", href: "/app/model-label/label-preview", icon: "verified_user" },
-      { en: "QR batches", hi: "QR बैच", href: "/app/qr/batch", icon: "qr_code_2" },
-      { en: "Production submissions", hi: "उत्पादन प्रस्तुति", href: "/app/production/quarterly-submission", icon: "factory" },
-      { en: "Bulk uploads", hi: "बल्क अपलोड", href: "/app/production/bulk-upload", icon: "upload_file" },
+      { en: "Labels and certificates", hi: "लेबल एवं प्रमाणपत्र", href: "/app/model-label/label-preview", icon: "verified_user", ext: MFR_AGENCY },
+      { en: "QR batches", hi: "QR बैच", href: "/app/qr/batch", icon: "qr_code_2", ext: MFR_AGENCY },
+      { en: "Production submissions", hi: "उत्पादन प्रस्तुति", href: "/app/production/quarterly-submission", icon: "factory", ext: MFR_AGENCY },
+      { en: "Bulk uploads", hi: "बल्क अपलोड", href: "/app/production/bulk-upload", icon: "upload_file", ext: MFR_AGENCY },
       { en: "Validation and reconciliation", hi: "सत्यापन एवं समाधान", href: "/app/production/reconciliation", icon: "rule" },
       { en: "Compliance exceptions", hi: "अनुपालन अपवाद", href: "/app/production/compliance-exceptions", icon: "report" },
     ],
@@ -77,11 +93,11 @@ export const CATEGORIES: Category[] = [
     hi: "अनुपालन एवं प्रवर्तन",
     icon: "gavel",
     items: [
-      { en: "Enforcement dashboard", hi: "प्रवर्तन डैशबोर्ड", href: "/app/mis-ai/enforcement-dashboard", icon: "monitoring" },
-      { en: "Sampling plans", hi: "नमूना योजनाएँ", href: "/app/enforcement/sample-plan", icon: "science" },
-      { en: "Enforcement cases", hi: "प्रवर्तन प्रकरण", href: "/app/enforcement/case", icon: "folder_special" },
-      { en: "Laboratory testing", hi: "प्रयोगशाला परीक्षण", href: "/app/enforcement/laboratory-assignment", icon: "biotech" },
-      { en: "Challenge testing", hi: "चुनौती परीक्षण", href: "/app/enforcement/challenge-test", icon: "fact_check" },
+      { en: "Enforcement dashboard", hi: "प्रवर्तन डैशबोर्ड", href: "/app/mis-ai/enforcement-dashboard", icon: "monitoring", ext: ["sda"] },
+      { en: "Sampling plans", hi: "नमूना योजनाएँ", href: "/app/enforcement/sample-plan", icon: "science", ext: ["sda"] },
+      { en: "Enforcement cases", hi: "प्रवर्तन प्रकरण", href: "/app/enforcement/case", icon: "folder_special", ext: ["iame", "sda"] },
+      { en: "Laboratory testing", hi: "प्रयोगशाला परीक्षण", href: "/app/enforcement/laboratory-assignment", icon: "biotech", ext: ["laboratory"] },
+      { en: "Challenge testing", hi: "चुनौती परीक्षण", href: "/app/enforcement/challenge-test", icon: "fact_check", ext: ["iame", "laboratory"] },
       { en: "Show-cause and penalties", hi: "कारण बताओ एवं दंड", href: "/app/enforcement/show-cause", icon: "gavel" },
       { en: "Closure and appeals", hi: "समापन एवं अपील", href: "/app/enforcement/enforcement-decision", icon: "how_to_vote" },
     ],
@@ -105,9 +121,9 @@ export const CATEGORIES: Category[] = [
     hi: "सहायता",
     icon: "support_agent",
     items: [
-      { en: "Raise / track ticket", hi: "टिकट दर्ज / ट्रैक", href: "/app/helpdesk/raise-ticket", icon: "confirmation_number" },
+      { en: "Raise / track ticket", hi: "टिकट दर्ज / ट्रैक", href: "/app/helpdesk/raise-ticket", icon: "confirmation_number", ext: ALL_EXTERNAL },
       { en: "Agent workspace", hi: "एजेंट कार्यक्षेत्र", href: "/app/helpdesk/workspace", icon: "headset_mic" },
-      { en: "Knowledge base", hi: "ज्ञान आधार", href: "/app/helpdesk/knowledge-base", icon: "menu_book" },
+      { en: "Knowledge base", hi: "ज्ञान आधार", href: "/app/helpdesk/knowledge-base", icon: "menu_book", ext: ALL_EXTERNAL },
       { en: "SLA dashboard", hi: "एसएलए डैशबोर्ड", href: "/app/helpdesk/sla-dashboard", icon: "speed" },
     ],
   },
@@ -118,7 +134,7 @@ export const CATEGORIES: Category[] = [
     icon: "insights",
     items: [
       { en: "Executive MIS", hi: "कार्यकारी एमआईएस", href: "/app/mis-ai/executive-mis", icon: "leaderboard" },
-      { en: "Operational dashboards", hi: "परिचालन डैशबोर्ड", href: "/app/mis-ai/registration-dashboard", icon: "dashboard" },
+      { en: "Operational dashboards", hi: "परिचालन डैशबोर्ड", href: "/app/mis-ai/registration-dashboard", icon: "dashboard", ext: ["sda"] },
       { en: "Report builder", hi: "रिपोर्ट बिल्डर", href: "/app/mis-ai/report-builder", icon: "build" },
       { en: "Scheduled reports", hi: "अनुसूचित रिपोर्ट", href: "/app/mis-ai/scheduled-reports", icon: "schedule" },
       { en: "AI Insights", hi: "एआई अंतर्दृष्टि", href: "/app/ai", icon: "auto_awesome" },
@@ -156,11 +172,11 @@ export const CATEGORIES: Category[] = [
 ];
 
 /**
- * Role-based menu visibility (DDD IA revision, §1). Operators never see the
- * whole catalogue — only the categories relevant to their function. The
- * external actor roles from the spec table (manufacturer/agency, IAME, SDA,
- * laboratory) belong to the applicant/field portals; this internal officer
- * console maps the remaining control roles as below.
+ * Category grants (DDD IA revision, §1). Operators never see the whole
+ * catalogue — only the categories relevant to their function. External partner
+ * roles are additionally narrowed to the partner items inside each category
+ * (see `ext` above), so a manufacturer never sees the BEE finance queue, the
+ * helpdesk agent workspace or the internal approval queue.
  */
 export const ROLE_CATEGORIES: Record<RoleKey, string[]> = {
   // Internal BEE roles
@@ -172,32 +188,58 @@ export const ROLE_CATEGORIES: Record<RoleKey, string[]> = {
   finance: ["home", "finance", "registrations", "insights"],
   helpdesk: ["home", "support"],
   auditor: ["home", "audit", "insights"],
-  // External partner roles — scoped to their own organisation / assignments.
-  manufacturer: ["home", "registrations", "labels-production", "finance", "support"],
-  agency: ["home", "registrations", "support"],
-  iame: ["home", "registrations", "compliance", "support"],
+  // External partner roles — own organisation / assignments only.
+  manufacturer: ["home", "registrations", "labels-production", "support"],
+  agency: ["home", "registrations", "labels-production", "support"],
+  iame: ["home", "compliance", "support"],
   sda: ["home", "compliance", "insights", "support"],
   laboratory: ["home", "compliance", "support"],
 };
 
-/** Categories visible to a role, in canonical order. */
+/** Whether a single item is visible to a role (item-level scope). */
+export function itemVisibleTo(item: CategoryItem, role: RoleKey): boolean {
+  if (isExternalRole(role)) return !!item.ext?.includes(role);
+  return !item.hideFrom?.includes(role);
+}
+
+/**
+ * The role's actual menu: granted categories, each with only the items the
+ * role may see, and categories with no visible item removed. This is the
+ * single source the sidebar renders and the audit checks.
+ */
 export function categoriesForRole(role: RoleKey): Category[] {
   const allowed = ROLE_CATEGORIES[role] ?? CATEGORIES.map((c) => c.id);
-  return CATEGORIES.filter((c) => allowed.includes(c.id));
+  return CATEGORIES
+    .filter((c) => allowed.includes(c.id))
+    .map((c) => ({ ...c, items: c.items.filter((it) => itemVisibleTo(it, role)) }))
+    .filter((c) => c.items.length > 0);
+}
+
+/** The exact menu item for a path within a category, if any. */
+function exactItem(cat: Category, pathname: string): CategoryItem | undefined {
+  return cat.items.find((it) => it.href.split("?")[0] === pathname);
 }
 
 /**
  * Single access decision for a console path — the same policy the sidebar,
- * the route guard and the tests use. Default deny: an unknown path or a
- * category the role is not granted is refused.
+ * the route guard and the tests use. Default deny: an unknown path, a
+ * category the role is not granted, or (for partners) a path that is not one
+ * of their curated items is refused.
  */
 export function canRoleAccessPath(role: RoleKey, pathname: string): boolean {
-  const allowed = ROLE_CATEGORIES[role] ?? [];
   // Console shell + dev catalogue are always reachable once authenticated.
   if (pathname === "/app" || pathname === "/app/screens") return true;
   const cat = categoryForPath(pathname);
-  if (!cat) return false;              // unmapped protected path → deny
-  return allowed.includes(cat.id);
+  if (!cat) return false;                       // unmapped protected path → deny
+  const allowed = ROLE_CATEGORIES[role] ?? [];
+  if (!allowed.includes(cat.id)) return false;  // category not granted → deny
+  const item = exactItem(cat, pathname);
+  if (isExternalRole(role)) {
+    // Partners reach ONLY their curated, visible items — nothing else.
+    return !!item && itemVisibleTo(item, role);
+  }
+  // Internal roles: category-level access, minus any explicitly hidden item.
+  return item ? itemVisibleTo(item, role) : true;
 }
 
 /** Which category a given /app path belongs to (for active-state + auto-open). */
@@ -205,6 +247,12 @@ export function categoryForPath(pathname: string): Category | undefined {
   // exact item match first (handles screens shared across categories)
   const exact = CATEGORIES.find((c) => c.items.some((it) => it.href === pathname));
   if (exact) return exact;
+  // The mis-ai module is split across categories: the enforcement dashboard is
+  // an exact Compliance item (handled above), while every other MIS/AI screen —
+  // including the AI use-case detail pages reached from the AI Insights
+  // landing (risk-scoring, chatbot-review, anomaly-detection, …) — belongs to
+  // Insights. Resolve those to Insights instead of the first segment match.
+  if (pathname.startsWith("/app/mis-ai/")) return CATEGORIES.find((c) => c.id === "insights");
   // else match by /app/<module> segment
   const seg = pathname.split("/").slice(0, 3).join("/"); // "/app/<module>"
   return CATEGORIES.find((c) =>

@@ -41,7 +41,7 @@ const TICKETS: Ticket[] = [
   {
     id: "TKT-2026-11842", subject: "QR code on my AC shows 'not found'", requester: "Anita Sharma", org: "Consumer",
     channel: "Web portal", category: "Verification", subcategory: "QR / label authenticity", priority: "High", status: "In progress",
-    assignee: "You (Helpdesk)", team: "Verification desk", created: "Today 09:12 IST", sla: "2h 40m left", slaBreached: false,
+    assignee: "You (Helpdesk)", team: "Verification desk", created: "24 Sep 2026, 09:12 IST", sla: "2h 40m left", slaBreached: false,
     conversation: [
       { who: "requester", text: "I scanned the QR on my new AC and it says the label is not found. Is it fake?", time: "09:12" },
       { who: "system", text: "AI assistant suggested category: Verification / QR (confidence 82%).", time: "09:12", internal: true },
@@ -52,7 +52,7 @@ const TICKETS: Ticket[] = [
   {
     id: "TKT-2026-11840", subject: "Unable to upload quarterly production file", requester: "R. Iyer", org: "Nova Cool Appliances Ltd.",
     channel: "Email", category: "Production", subcategory: "Bulk upload error", priority: "Urgent", status: "New",
-    assignee: "Unassigned", team: "—", created: "Today 08:40 IST", sla: "SLA breached", slaBreached: true,
+    assignee: "Unassigned", team: "—", created: "24 Sep 2026, 08:40 IST", sla: "SLA breached", slaBreached: true,
     conversation: [
       { who: "requester", text: "The bulk upload keeps failing with 'schema mismatch'. Deadline is today.", time: "08:40" },
     ],
@@ -60,7 +60,7 @@ const TICKETS: Ticket[] = [
   {
     id: "TKT-2026-11835", subject: "How do I renew a model registration?", requester: "M. Verma", org: "Sunrise Electra Pvt. Ltd.",
     channel: "Phone", category: "Registrations", subcategory: "Renewal process", priority: "Normal", status: "Waiting",
-    assignee: "You (Helpdesk)", team: "Registrations desk", created: "Yesterday 16:20 IST", sla: "1d 3h left", slaBreached: false,
+    assignee: "You (Helpdesk)", team: "Registrations desk", created: "23 Sep 2026, 16:20 IST", sla: "1d 3h left", slaBreached: false,
     conversation: [
       { who: "requester", text: "My 5-star model is expiring next month, what's the renewal process?", time: "16:20" },
       { who: "agent", text: "Shared KB-201 (Renewal walkthrough). Waiting for confirmation.", time: "16:35" },

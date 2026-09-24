@@ -40,14 +40,15 @@ export function AppTopbar({ onMenu }: { onMenu?: () => void }) {
           {lang === "en" ? "हिन्दी" : "English"}
         </button>
 
-        {/* Role switcher */}
-        <div className="flex items-center gap-space-sm bg-forest-light px-space-sm py-1.5 rounded-lg">
-          <Icon name="badge" size={18} className="text-primary" />
+        {/* Role switcher — prototype preview mechanism, not real authentication */}
+        <div className="flex items-center gap-space-sm bg-forest-light px-space-sm py-1.5 rounded-lg" title={t("app.previewRoleHint")}>
+          <Icon name="visibility" size={16} className="text-primary" />
+          <span className="hidden lg:inline font-label-sm text-label-sm text-forest-dark/70 uppercase tracking-wide">{t("app.previewRole")}</span>
           <select
             value={role}
             onChange={(e) => setRole(e.target.value as RoleKey)}
             className="bg-transparent outline-none font-label-md text-label-md text-forest-dark font-semibold cursor-pointer"
-            aria-label="Active role"
+            aria-label={t("app.previewRole")}
           >
             <optgroup label={t("role.internal")}>
               {ROLES.filter((r) => r.kind === "internal").map((r) => (

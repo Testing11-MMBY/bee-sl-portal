@@ -81,26 +81,26 @@ export const PRIMARY_CERT: Certificate = {
   category: "Room ACs",
   stars: 5,
   iseer: 5.10,
-  validFrom: "20 Sep 2026",
-  validTo: "19 Sep 2029",
+  validFrom: "04 Sep 2026",
+  validTo: "03 Sep 2029",
   currentVersion: 2,
   versions: [
     {
-      version: 1, event: "Issued", status: "Superseded", effectiveDate: "20 Sep 2026",
+      version: 1, event: "Issued", status: "Superseded", effectiveDate: "04 Sep 2026",
       hash: "3f9a1c47b8e20d5f6a9c8e14b2d70f83c1a6e59d4b7802fa3c6d1e9b0b4a7e2d",
-      tx: { txId: "a1b2c3d4e5f60718293a4b5c6d7e8f901a2b3c4d5e6f70819a2b3c4d5e6f7081", blockNumber: 184320, timestamp: "2026-09-20T06:42:11Z", status: "Confirmed" },
+      tx: { txId: "a1b2c3d4e5f60718293a4b5c6d7e8f901a2b3c4d5e6f70819a2b3c4d5e6f7081", blockNumber: 184320, timestamp: "2026-09-04T06:42:11Z", status: "Confirmed" },
       previousVersion: null, officer: "R. Menon (SDA)", note: "Initial issuance on model approval.",
     },
     {
-      version: 2, event: "Amended", status: "Active", effectiveDate: "05 Oct 2026",
+      version: 2, event: "Amended", status: "Active", effectiveDate: "12 Sep 2026",
       hash: "7c4e9d21a6f083b5c7e1092d4a6b8f30e5c9a1d7b3f206e8a4c1d9b7e3f5028a",
-      tx: { txId: "b2c3d4e5f6071829a3b4c5d6e7f8091a2b3c4d5e6f7081920a3b4c5d6e7f8091", blockNumber: 185011, timestamp: "2026-10-05T09:15:44Z", status: "Confirmed" },
+      tx: { txId: "b2c3d4e5f6071829a3b4c5d6e7f8091a2b3c4d5e6f7081920a3b4c5d6e7f8091", blockNumber: 185011, timestamp: "2026-09-12T09:15:44Z", status: "Confirmed" },
       previousVersion: 1, officer: "A. Kapoor (Programme)", note: "Corrected annual energy consumption (820 → 835 kWh) after re-check.",
     },
     {
-      version: 3, event: "Revoked", status: "Revoked", effectiveDate: "18 Oct 2026",
+      version: 3, event: "Revoked", status: "Revoked", effectiveDate: "20 Sep 2026",
       hash: "b28d5f0a9c1e73d64b8a205f0c9e1d7a3b6082f4e5c9d1a7b30e6f28a4c15d9b",
-      tx: { txId: "c3d4e5f6071829a3b4c5d6e7f8091a2b3c4d5e6f7081920a3b4c5d6e7f80912a", blockNumber: 185740, timestamp: "2026-10-18T14:03:20Z", status: "Confirmed" },
+      tx: { txId: "c3d4e5f6071829a3b4c5d6e7f8091a2b3c4d5e6f7081920a3b4c5d6e7f80912a", blockNumber: 185740, timestamp: "2026-09-20T14:03:20Z", status: "Confirmed" },
       previousVersion: 2, officer: "Director (BEE)", note: "Revoked after failed enforcement check-test (measured ISEER 4.62 vs declared 5.10).",
     },
   ],
@@ -216,19 +216,13 @@ export function scenarioByReg(reg: string): VerifyScenario | undefined {
  * reuses the primary cert's tx ids for cross-screen consistency.
  * ------------------------------------------------------------------ */
 export const FABRIC_NETWORK = {
-  status: "Healthy" as "Healthy" | "Degraded" | "Down",
   peers: [
-    { name: "peer0.bee.gov", status: "Up" }, { name: "peer1.bee.gov", status: "Up" },
+    { name: "peer0.bee.gov", status: "Up" }, { name: "peer1.bee.gov", status: "Degraded" },
     { name: "peer0.nic.gov", status: "Up" },
   ],
   orderer: "orderer.bee.gov — Up (Raft, 3 nodes)",
-  lastBlock: 185742,
-  successRate: 99.4,
-  failed24h: 3,
-  pendingQueue: 2,
-  avgResponseMs: 420,
-  endorsementFailures24h: 1,
-  reconciliation: "In sync (portal ↔ ledger, checked 2 min ago)",
+  lastBlock: 185741,
+  avgResponseMs: 480,
 };
 
 export interface FabricTxRow {
@@ -246,12 +240,40 @@ export interface FabricTxRow {
 }
 
 export const FABRIC_TX: FabricTxRow[] = [
-  { correlationId: "COR-88213", ref: PRIMARY_CERT.certId, event: "Issued", version: 1, txId: PRIMARY_CERT.versions[0].tx.txId, status: "Confirmed", block: 184320, submitted: "2026-09-20T06:41:58Z", confirmed: "2026-09-20T06:42:11Z", retries: 0, error: "—" },
-  { correlationId: "COR-88540", ref: PRIMARY_CERT.certId, event: "Amended", version: 2, txId: PRIMARY_CERT.versions[1].tx.txId, status: "Confirmed", block: 185011, submitted: "2026-10-05T09:15:30Z", confirmed: "2026-10-05T09:15:44Z", retries: 0, error: "—" },
-  { correlationId: "COR-88991", ref: PRIMARY_CERT.certId, event: "Revoked", version: 3, txId: PRIMARY_CERT.versions[2].tx.txId, status: "Confirmed", block: 185740, submitted: "2026-10-18T14:03:05Z", confirmed: "2026-10-18T14:03:20Z", retries: 0, error: "—" },
-  { correlationId: "COR-89044", ref: "BEE/CERT/RAC/2026/10022", event: "Issued", version: 1, txId: "092a3b4c5d6e7f80912a3b4c5d6e7f8091a2b3c4d5e6f7081920a3b4c5d6e7f8", status: "Retrying", block: "—", submitted: "2026-10-19T10:20:00Z", confirmed: "—", retries: 2, error: "ENDORSEMENT_POLICY_FAILURE: peer1 unavailable" },
-  { correlationId: "COR-89050", ref: "BEE/CERT/RAC/2026/10011", event: "Renewed", version: 2, txId: "2a3b4c5d6e7f80912a3b4c5d6e7f8091a2b3c4d5e6f7081920a3b4c5d6e7f809", status: "Confirmed", block: 185741, submitted: "2026-10-19T11:02:00Z", confirmed: "2026-10-19T11:02:12Z", retries: 0, error: "—" },
+  { correlationId: "COR-88213", ref: PRIMARY_CERT.certId, event: "Issued", version: 1, txId: PRIMARY_CERT.versions[0].tx.txId, status: "Confirmed", block: 184320, submitted: "2026-09-04T06:41:58Z", confirmed: "2026-09-04T06:42:11Z", retries: 0, error: "—" },
+  { correlationId: "COR-88540", ref: PRIMARY_CERT.certId, event: "Amended", version: 2, txId: PRIMARY_CERT.versions[1].tx.txId, status: "Confirmed", block: 185011, submitted: "2026-09-12T09:15:30Z", confirmed: "2026-09-12T09:15:44Z", retries: 0, error: "—" },
+  { correlationId: "COR-88991", ref: PRIMARY_CERT.certId, event: "Revoked", version: 3, txId: PRIMARY_CERT.versions[2].tx.txId, status: "Confirmed", block: 185740, submitted: "2026-09-20T14:03:05Z", confirmed: "2026-09-20T14:03:20Z", retries: 0, error: "—" },
+  { correlationId: "COR-89044", ref: "BEE/CERT/RAC/2026/10022", event: "Issued", version: 1, txId: "092a3b4c5d6e7f80912a3b4c5d6e7f8091a2b3c4d5e6f7081920a3b4c5d6e7f8", status: "Retrying", block: "—", submitted: "2026-09-23T10:20:00Z", confirmed: "—", retries: 2, error: "ENDORSEMENT_POLICY_FAILURE: peer1 unavailable" },
+  { correlationId: "COR-89050", ref: "BEE/CERT/RAC/2026/10011", event: "Renewed", version: 2, txId: "2a3b4c5d6e7f80912a3b4c5d6e7f8091a2b3c4d5e6f7081920a3b4c5d6e7f809", status: "Confirmed", block: 185741, submitted: "2026-09-23T11:02:00Z", confirmed: "2026-09-23T11:02:12Z", retries: 0, error: "—" },
 ];
+
+/* Reconciliation exceptions — the SAME fixture drives the summary counts and
+ * the exception table, so health can never say "in sync" while these exist. */
+export interface ReconException {
+  id: string; certId: string; version: number; portalStatus: string; ledgerStatus: string;
+  cause: string; owner: string; nextStep: string; correlationId: string;
+}
+export const RECON_EXCEPTIONS: ReconException[] = [
+  { id: "RX-01", certId: "BEE/CERT/RAC/2026/10022", version: 1, portalStatus: "Active (pending anchor)", ledgerStatus: "No confirmed transaction", cause: "Endorsement policy failure — peer1 unavailable", owner: "Registrations IT", nextStep: "Retry submission when peer1 recovers", correlationId: "COR-89044" },
+  { id: "RX-02", certId: "BEE/CERT/RAC/2026/10077", version: 1, portalStatus: "Active", ledgerStatus: "Hash differs", cause: "Portal document regenerated after anchoring", owner: "Enforcement Analytics", nextStep: "Investigate tampering; re-hash and re-anchor", correlationId: "COR-88820" },
+  { id: "RX-03", certId: "BEE/CERT/RAC/2026/10041", version: 2, portalStatus: "Active", ledgerStatus: "Submitted (not confirmed)", cause: "Portal marked active before ledger confirmation", owner: "Registrations IT", nextStep: "Await confirmation or roll back portal status", correlationId: "COR-89012" },
+];
+
+/** Health computed from the live tx + exception fixture (not hard-coded). */
+export function fabricHealth(txs: FabricTxRow[] = FABRIC_TX, exc: ReconException[] = RECON_EXCEPTIONS) {
+  const failed = txs.filter((t) => t.status === "Failed").length;
+  const retrying = txs.filter((t) => t.status === "Retrying").length;
+  const pending = txs.filter((t) => t.status === "Submitted").length;
+  const confirmed = txs.filter((t) => t.status === "Confirmed").length;
+  const missing = exc.filter((e) => e.ledgerStatus.includes("No confirmed")).length;
+  const mismatch = exc.filter((e) => e.ledgerStatus.includes("differs")).length;
+  const peerDown = FABRIC_NETWORK.peers.filter((p) => p.status !== "Up").length;
+  const anyProblem = failed + retrying + pending + exc.length > 0;
+  const status: "Healthy" | "Degraded" | "Unavailable" =
+    confirmed === 0 ? "Unavailable" : anyProblem || peerDown > 0 ? "Degraded" : "Healthy";
+  const successRate = txs.length ? Math.round((confirmed / txs.length) * 1000) / 10 : 0;
+  return { status, failed, retrying, pending, confirmed, missing, mismatch, exceptions: exc.length, successRate, peerDown };
+}
 
 /* ------------------------------------------------------------------ *
  * Shared status configuration — single source of truth for badges.
@@ -284,3 +306,24 @@ export type IssuanceState =
 export function correlationForVersion(v: number): string {
   return FABRIC_TX.find((t) => t.ref === PRIMARY_CERT.certId && t.version === v)?.correlationId ?? `COR-${88000 + v}`;
 }
+
+/* ------------------------------------------------------------------ *
+ * Shared AI model-state fixture — one source of truth for model state
+ * across AI Insights, the use-case pages and Model Governance. A model in
+ * "Shadow" (challenger) may be evaluated and given feedback but MUST NOT
+ * send an output to a user; only an authorised "Live" model may.
+ * ------------------------------------------------------------------ */
+export type ModelState = "Approved" | "Shadow" | "Retired";
+export interface AIModelState {
+  key: string; name: string; version: string; state: ModelState; live: boolean;
+  accuracy: number; drift: "Low" | "Rising" | "High"; override: number;
+  trained: string; retrained: string; owner: string; lastRun: string; health: "healthy" | "monitor" | "retrain";
+}
+export const AI_MODELS: Record<string, AIModelState> = {
+  "risk-rank":      { key: "risk-rank", name: "risk-rank", version: "v2.3", state: "Approved", live: true, accuracy: 91, drift: "Low", override: 14, trained: "Apr 2024 – Feb 2026", retrained: "12 Aug 2026", owner: "Enforcement Analytics", lastRun: "24 Sep 2026, 06:15", health: "healthy" },
+  "anomaly-iforest":{ key: "anomaly-iforest", name: "anomaly-iforest", version: "v1.8", state: "Approved", live: true, accuracy: 86, drift: "Rising", override: 23, trained: "Jan 2025 – Jun 2026", retrained: "01 Jul 2026", owner: "Production Cell", lastRun: "24 Sep 2026, 06:40", health: "monitor" },
+  "doc-extract":    { key: "doc-extract", name: "doc-extract", version: "v3.1", state: "Approved", live: true, accuracy: 94, drift: "Low", override: 9, trained: "Jul 2023 – Feb 2026", retrained: "20 Jun 2026", owner: "Registrations IT", lastRun: "24 Sep 2026, 07:02", health: "healthy" },
+  "assist-rag":     { key: "assist-rag", name: "assist-rag", version: "v1.4", state: "Shadow", live: false, accuracy: 79, drift: "High", override: 31, trained: "KB snapshot Jun 2026", retrained: "—", owner: "Helpdesk Digital", lastRun: "24 Sep 2026, 08:40", health: "monitor" },
+  "trend-stats":    { key: "trend-stats", name: "trend-stats", version: "v2.0", state: "Approved", live: true, accuracy: 92, drift: "Low", override: 0, trained: "FY2023–FY2026", retrained: "18 Aug 2026", owner: "Policy Analytics", lastRun: "24 Sep 2026, 05:50", health: "healthy" },
+};
+export const modelLabel = (m: AIModelState) => `${m.name} ${m.version}`;

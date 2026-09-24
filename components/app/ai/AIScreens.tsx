@@ -6,7 +6,7 @@ import { Icon } from "@/components/ui/Icon";
 import { Stars } from "@/components/ui/Stars";
 import { Module, Screen } from "@/lib/screens";
 import { Card, ScreenChrome, Status, OK, WARN, BAD } from "@/components/app/ScreenScaffold";
-import { ADVISORY_TEXT } from "@/lib/mock/certificate";
+import { ADVISORY_TEXT, AI_MODELS, AIModelState, modelLabel } from "@/lib/mock/certificate";
 import { useRole } from "@/components/app/RoleContext";
 import { roleByKey } from "@/lib/roles";
 
@@ -36,47 +36,31 @@ export interface AIUseCase {
   recordsAnalysed: number;
   exceptions: number;
   awaitingReview: number;
-  lastRun: string;
-  model: string;
+  modelKey: string;              // → AI_MODELS (single source of state/version/lastRun)
+  get lastRun(): string;
+  get model(): string;
+  get state(): string;           // Approved / Shadow / Retired
   status: ModelHealth;
 }
 
+/** Build a use case, deriving version/state/lastRun from the shared fixture. */
+function useCase(u: Omit<AIUseCase, "lastRun" | "model" | "state" | "status">): AIUseCase {
+  const m = AI_MODELS[u.modelKey];
+  return {
+    ...u,
+    get lastRun() { return m.lastRun; },
+    get model() { return modelLabel(m); },
+    get state() { return m.state; },
+    status: m.health,
+  };
+}
+
 export const AI_USECASES: AIUseCase[] = [
-  {
-    id: "risk", href: "/app/mis-ai/risk-scoring", icon: "target",
-    title: "Compliance Risk Scoring",
-    purpose: "Prioritise manufacturers and models for enforcement attention.",
-    recordsAnalysed: 1284, exceptions: 37, awaitingReview: 12,
-    lastRun: "Today 06:15 IST", model: "risk-rank v2.3", status: "healthy",
-  },
-  {
-    id: "anomaly", href: "/app/mis-ai/production-anomaly", icon: "readiness_score",
-    title: "Production Anomaly Detection",
-    purpose: "Identify suspicious or statistically unusual production submissions.",
-    recordsAnalysed: 9640, exceptions: 54, awaitingReview: 21,
-    lastRun: "Today 06:40 IST", model: "anomaly-iforest v1.8", status: "monitor",
-  },
-  {
-    id: "document", href: "/app/mis-ai/extraction-review", icon: "document_scanner",
-    title: "Document Intelligence",
-    purpose: "Compare uploaded certificates and reports with entered data.",
-    recordsAnalysed: 2170, exceptions: 88, awaitingReview: 30,
-    lastRun: "Today 07:02 IST", model: "doc-extract v3.1", status: "healthy",
-  },
-  {
-    id: "helpdesk", href: "/app/mis-ai/chatbot-review", icon: "smart_toy",
-    title: "Helpdesk Assistant",
-    purpose: "Answer common questions and assist ticket routing.",
-    recordsAnalysed: 5312, exceptions: 19, awaitingReview: 7,
-    lastRun: "Live", model: "assist-rag v1.4", status: "monitor",
-  },
-  {
-    id: "trends", href: "/app/mis-ai/rating-trends", icon: "trending_up",
-    title: "Star-Rating Trend Analytics",
-    purpose: "Support policy and star-threshold revision decisions.",
-    recordsAnalysed: 41200, exceptions: 0, awaitingReview: 0,
-    lastRun: "Today 05:50 IST", model: "trend-stats v2.0", status: "healthy",
-  },
+  useCase({ id: "risk", href: "/app/mis-ai/risk-scoring", icon: "target", title: "Compliance Risk Scoring", purpose: "Prioritise manufacturers and models for enforcement attention.", recordsAnalysed: 1284, exceptions: 37, awaitingReview: 12, modelKey: "risk-rank" }),
+  useCase({ id: "anomaly", href: "/app/mis-ai/production-anomaly", icon: "readiness_score", title: "Production Anomaly Detection", purpose: "Identify suspicious or statistically unusual production submissions.", recordsAnalysed: 9640, exceptions: 54, awaitingReview: 21, modelKey: "anomaly-iforest" }),
+  useCase({ id: "document", href: "/app/mis-ai/extraction-review", icon: "document_scanner", title: "Document Intelligence", purpose: "Compare uploaded certificates and reports with entered data.", recordsAnalysed: 2170, exceptions: 88, awaitingReview: 30, modelKey: "doc-extract" }),
+  useCase({ id: "helpdesk", href: "/app/mis-ai/chatbot-review", icon: "smart_toy", title: "Helpdesk Assistant", purpose: "Answer common questions and assist ticket routing.", recordsAnalysed: 5312, exceptions: 19, awaitingReview: 7, modelKey: "assist-rag" }),
+  useCase({ id: "trends", href: "/app/mis-ai/rating-trends", icon: "trending_up", title: "Star-Rating Trend Analytics", purpose: "Support policy and star-threshold revision decisions.", recordsAnalysed: 41200, exceptions: 0, awaitingReview: 0, modelKey: "trend-stats" }),
 ];
 
 export const HEALTH_META: Record<ModelHealth, { label: string; tone: string; icon: string }> = {
@@ -147,32 +131,32 @@ interface RiskEntity {
 }
 
 const RISK_ENTITIES: RiskEntity[] = [
-  { id: "MFR-2231", name: "Nova Cool Appliances Ltd.", kind: "Manufacturer", score: 82, percentile: 98, lastScored: "Today 06:15 IST",
+  { id: "MFR-2231", name: "Nova Cool Appliances Ltd.", kind: "Manufacturer", score: 82, percentile: 98, lastScored: "24 Sep 2026, 06:15",
     factors: [
       { label: "QR verification anomalies", observed: "41 in 90 days", direction: "up", contribution: 28, evidence: "View events" },
       { label: "Delayed submissions", observed: "5 quarters", direction: "up", contribution: 21, evidence: "View submissions" },
       { label: "Prior enforcement", observed: "2 confirmed cases", direction: "up", contribution: 18, evidence: "View cases" },
       { label: "Production mismatch", observed: "17.4% variance", direction: "up", contribution: 15, evidence: "View comparison" },
     ], priorEnforcement: 2, submissionDelays: 5, qrAnomalies: 41 },
-  { id: "MDL-10233", name: "FrostMax 1.5T (5★)", kind: "Model", score: 74, percentile: 94, lastScored: "Today 06:15 IST",
+  { id: "MDL-10233", name: "FrostMax 1.5T (5★)", kind: "Model", score: 74, percentile: 94, lastScored: "24 Sep 2026, 06:15",
     factors: [
       { label: "Cross-model ISEER outlier", observed: "2.1σ from peers", direction: "up", contribution: 30, evidence: "View comparison" },
       { label: "QR verification anomalies", observed: "27 in 90 days", direction: "up", contribution: 28, evidence: "View events" },
       { label: "Production spike", observed: "+286% QoQ", direction: "up", contribution: 22, evidence: "View submissions" },
       { label: "Late quarterly filing", observed: "3 quarters", direction: "up", contribution: 20, evidence: "View submissions" },
     ], priorEnforcement: 1, submissionDelays: 3, qrAnomalies: 27 },
-  { id: "MFR-1188", name: "Sunrise Electra Pvt. Ltd.", kind: "Manufacturer", score: 58, percentile: 81, lastScored: "Today 06:15 IST",
+  { id: "MFR-1188", name: "Sunrise Electra Pvt. Ltd.", kind: "Manufacturer", score: 58, percentile: 81, lastScored: "24 Sep 2026, 06:15",
     factors: [
       { label: "Delayed submissions", observed: "4 quarters", direction: "up", contribution: 40, evidence: "View submissions" },
       { label: "Document mismatch rate", observed: "9.2%", direction: "up", contribution: 32, evidence: "View comparison" },
       { label: "QR anomalies", observed: "12 in 90 days", direction: "up", contribution: 28, evidence: "View events" },
     ], priorEnforcement: 0, submissionDelays: 4, qrAnomalies: 12 },
-  { id: "MDL-10871", name: "AquaBreeze 2T (3★)", kind: "Model", score: 37, percentile: 62, lastScored: "Today 06:15 IST",
+  { id: "MDL-10871", name: "AquaBreeze 2T (3★)", kind: "Model", score: 37, percentile: 62, lastScored: "24 Sep 2026, 06:15",
     factors: [
       { label: "Minor label variance", observed: "1.1% variance", direction: "up", contribution: 55, evidence: "View comparison" },
       { label: "One late filing", observed: "1 quarter", direction: "up", contribution: 45, evidence: "View submissions" },
     ], priorEnforcement: 0, submissionDelays: 1, qrAnomalies: 3 },
-  { id: "MFR-3012", name: "GreenVolt Industries", kind: "Manufacturer", score: 24, percentile: 40, lastScored: "Today 06:15 IST",
+  { id: "MFR-3012", name: "GreenVolt Industries", kind: "Manufacturer", score: 24, percentile: 40, lastScored: "24 Sep 2026, 06:15",
     factors: [
       { label: "Isolated QR mismatch", observed: "2 in 90 days", direction: "up", contribution: 60, evidence: "View events" },
       { label: "Data completeness", observed: "99.1%", direction: "down", contribution: 40, evidence: "View submissions" },
@@ -184,25 +168,113 @@ const DECISION_LABEL: Record<string, string> = {
   assess: "Open enforcement assessment (draft case)", monitor: "Keep under monitoring", dismiss: "Dismiss — false positive",
 };
 
+/* Entity-specific evidence behind each "View …" control. Rows are derived
+ * deterministically from the selected entity so the same entity always shows
+ * the same underlying events, and the scoring period is carried through. */
+interface EvidenceTable { kind: string; note: string; columns: string[]; rows: string[][]; }
+const EV_PERIOD = "Q2 FY26 · Jul–Sep 2026";
+function evidenceFor(entity: RiskEntity, factor: RiskFactor): EvidenceTable {
+  const seed = Number(entity.id.replace(/\D/g, "")) || 1;
+  const pick = <T,>(arr: T[], i: number) => arr[(seed + i * 7) % arr.length];
+  const day = (i: number) => String(((seed + i * 11) % 28) + 1).padStart(2, "0");
+  const mon = (i: number) => ["Jul", "Aug", "Sep"][(seed + i) % 3];
+  const locs = ["Pune", "Chennai", "Noida", "Ahmedabad", "Kochi", "Indore", "Jaipur", "Guwahati"];
+
+  if (factor.evidence === "View events") {
+    const total = entity.qrAnomalies;
+    const shown = Math.min(total, 6);
+    const verdicts = ["Duplicate serial", "Revoked-QR scan", "Serial not on ledger", "Region mismatch"];
+    return {
+      kind: "QR verification anomalies",
+      note: `${total} anomalous scans in the 90-day window. Showing ${shown} most recent; each links to a scan record, not a confirmed violation.`,
+      columns: ["Event", "Date", "QR serial", "Scan location", "Verdict"],
+      rows: Array.from({ length: shown }, (_, i) => [
+        `EV-${entity.id.replace(/\D/g, "")}-${100 + i}`,
+        `${day(i)} ${mon(i)} 2026`,
+        `QR-${(seed * 31 + i * 97) % 900000 + 100000}`,
+        pick(locs, i),
+        pick(verdicts, i),
+      ]),
+    };
+  }
+  if (factor.evidence === "View submissions") {
+    const quarters = ["Q3 FY25", "Q4 FY25", "Q1 FY26", "Q2 FY26"];
+    const dues = ["15 Jan 2026", "15 Apr 2026", "15 Jul 2026", "15 Oct 2026"];
+    const late = entity.submissionDelays;
+    return {
+      kind: "Quarterly production submissions",
+      note: `${late} of the last ${quarters.length} filings were late. Statutory due date is the 15th after each quarter close.`,
+      columns: ["Quarter", "Due date", "Filed on", "Status"],
+      rows: quarters.map((q, i) => {
+        const isLate = i < late;
+        const days = isLate ? ((seed + i * 5) % 22) + 4 : 0;
+        return [
+          q, dues[i],
+          i === quarters.length - 1 ? "Not yet due" : isLate ? `${day(i)} ${mon(i)} 2026` : `On time`,
+          i === quarters.length - 1 ? "Open" : isLate ? `Late by ${days} days` : "On time",
+        ];
+      }),
+    };
+  }
+  if (factor.evidence === "View cases") {
+    const n = entity.priorEnforcement;
+    if (n === 0) return { kind: "Prior enforcement cases", note: "No confirmed enforcement cases on record for this entity.", columns: ["Case", "Opened", "Type", "Outcome"], rows: [] };
+    const types = ["Label misuse", "Undeclared production", "Test-report discrepancy"];
+    const outcomes = ["Penalty settled", "Corrective action closed"];
+    return {
+      kind: "Prior enforcement cases",
+      note: `${n} confirmed case${n > 1 ? "s" : ""} closed in the previous 24 months. Historical context only — not part of the current period's score evidence.`,
+      columns: ["Case", "Opened", "Type", "Outcome"],
+      rows: Array.from({ length: n }, (_, i) => [
+        `ENF-2025-${(seed * 3 + i * 41) % 900 + 100}`,
+        `${day(i)} ${["Feb", "May", "Nov"][(seed + i) % 3]} 2025`,
+        pick(types, i),
+        pick(outcomes, i),
+      ]),
+    };
+  }
+  // View comparison
+  return {
+    kind: "Declared vs observed comparison",
+    note: `Portal-declared figures reconciled against ledger and test-lab records for ${EV_PERIOD}.`,
+    columns: ["Metric", "Declared", "Observed", "Variance"],
+    rows: [
+      ["Units produced (Q2)", `${(seed * 137) % 40 + 10}k`, `${(seed * 137) % 40 + 10 + (seed % 9) + 2}k`, factor.observed],
+      ["ISEER (rated vs test)", `${(3.6 + (seed % 5) / 10).toFixed(2)}`, `${(3.4 + (seed % 4) / 10).toFixed(2)}`, "Below rated"],
+      ["QR activations vs units", `${(seed * 137) % 40 + 10}k`, `${(seed * 137) % 40 + 8 + (seed % 6)}k`, "Shortfall"],
+    ],
+  };
+}
+
 export function ComplianceRiskScoring({ module, screen }: { module: Module; screen: Screen }) {
   const { role } = useRole();
   const officer = roleByKey(role);
   const [selId, setSelId] = useState(RISK_ENTITIES[0].id);
   const [disposition, setDisposition] = useState("monitor");
   const [note, setNote] = useState("");
-  const [recorded, setRecorded] = useState<RecordedDisposition | null>(null);
+  // Dispositions persist across selections so the queue reflects officer work:
+  // once an entity is dispositioned it leaves the "awaiting disposition" count.
+  const [dispositions, setDispositions] = useState<Record<string, RecordedDisposition>>({});
+  const [evidence, setEvidence] = useState<RiskFactor | null>(null);
   const sel = RISK_ENTITIES.find((e) => e.id === selId)!;
   const band = riskBand(sel.score);
+  const recorded = dispositions[selId] ?? null;
+  const awaiting = Math.max(0, 12 - Object.keys(dispositions).length);
 
-  function select(id: string) { setSelId(id); setRecorded(null); setNote(""); setDisposition("monitor"); }
+  function select(id: string) { setSelId(id); setNote(""); setDisposition("monitor"); setEvidence(null); }
   function record() {
     if (!note.trim()) return;
-    setRecorded({
-      officer: officer.name, role: officer.short, timestamp: new Date().toLocaleString("en-IN"),
-      decision: DECISION_LABEL[disposition], comments: note.trim(),
-      auditRef: `AUD-RISK-${sel.id}-${Math.floor(Math.random() * 9000 + 1000)}`,
-    });
+    setDispositions((d) => ({
+      ...d,
+      [sel.id]: {
+        officer: officer.name, role: officer.short, timestamp: new Date().toLocaleString("en-IN"),
+        decision: DECISION_LABEL[disposition], comments: note.trim(),
+        auditRef: `AUD-RISK-${sel.id}-${Math.floor(Math.random() * 9000 + 1000)}`,
+      },
+    }));
+    setNote(""); setDisposition("monitor");
   }
+  function clearDisposition(id: string) { setDispositions((d) => { const n = { ...d }; delete n[id]; return n; }); }
 
   return (
     <ScreenChrome module={module} screen={screen} subtitle="Risk ranking of entities · model risk-rank v2.3">
@@ -213,7 +285,7 @@ export function ComplianceRiskScoring({ module, screen }: { module: Module; scre
         {[
           { label: "Entities scored", value: "1,284", icon: "target", tone: "text-primary" },
           { label: "High-risk band", value: "37", icon: "priority_high", tone: "text-error" },
-          { label: "Awaiting disposition", value: "12", icon: "how_to_reg", tone: "text-solar-gold-dark" },
+          { label: "Awaiting disposition", value: String(awaiting), icon: "how_to_reg", tone: "text-solar-gold-dark" },
           { label: "Data period", value: "Q2 FY26", icon: "calendar_month", tone: "text-success" },
         ].map((k) => (
           <div key={k.label} className="bg-surface-card rounded-xl shadow-sm p-space-md">
@@ -231,17 +303,21 @@ export function ComplianceRiskScoring({ module, screen }: { module: Module; scre
               {RISK_ENTITIES.map((e, i) => {
                 const b = riskBand(e.score);
                 const active = e.id === selId;
+                const done = dispositions[e.id];
                 return (
                   <button key={e.id} type="button" onClick={() => select(e.id)}
                     className={`w-full flex items-center gap-space-sm p-space-sm rounded-lg text-left transition-colors ${active ? "bg-primary-container/40 ring-1 ring-primary" : "bg-surface-container-low hover:bg-surface-container"}`}>
                     <span className="font-headline-sm text-headline-sm font-bold text-on-surface-variant w-6 text-center">{i + 1}</span>
                     <div className="flex-1 min-w-0">
                       <div className="font-title-sm text-title-sm text-on-surface truncate">{e.name}</div>
-                      <div className="font-label-sm text-label-sm text-on-surface-variant">{e.kind} · {e.id}</div>
+                      <div className="font-label-sm text-label-sm text-on-surface-variant flex items-center gap-1">
+                        <span>{e.kind} · {e.id}</span>
+                        {done && <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-success-light text-success font-label-sm text-label-sm"><Icon name="check_circle" size={11} fill /> Dispositioned</span>}
+                      </div>
                     </div>
                     <div className="text-right">
                       <div className="font-headline-sm text-headline-sm font-bold text-on-surface">{e.score}</div>
-                      <Status label={b.label} tone={b.tone} />
+                      <Status label={done ? "Cleared" : b.label} tone={done ? OK : b.tone} />
                     </div>
                   </button>
                 );
@@ -261,7 +337,7 @@ export function ComplianceRiskScoring({ module, screen }: { module: Module; scre
               <MiniKV k="Scoring period" v="Q2 FY26" />
               <MiniKV k="Last scored" v={sel.lastScored} />
               <MiniKV k="Model / version" v="risk-rank v2.3" />
-              <MiniKV k="Data freshness" v="Refreshed 2h ago" />
+              <MiniKV k="Data freshness" v="Refreshed 24 Sep, 06:15" />
             </div>
             <div className="flex items-center gap-space-sm mb-space-md font-label-sm text-label-sm text-on-surface-variant">
               <span className="font-semibold text-on-surface">Thresholds:</span>
@@ -285,7 +361,7 @@ export function ComplianceRiskScoring({ module, screen }: { module: Module; scre
                       <td className="py-2 pr-space-sm font-body-sm text-body-sm text-on-surface-variant whitespace-nowrap">{f.observed}</td>
                       <td className="py-2 pr-space-sm"><span className={`inline-flex items-center gap-0.5 font-label-sm text-label-sm ${f.direction === "up" ? "text-error" : "text-success"}`}><Icon name={f.direction === "up" ? "arrow_upward" : "arrow_downward"} size={13} /> {f.direction === "up" ? "Increases" : "Reduces"}</span></td>
                       <td className="py-2 pr-space-sm font-body-sm text-body-sm text-on-surface font-semibold whitespace-nowrap">{f.direction === "up" ? "+" : "−"}{f.contribution}</td>
-                      <td className="py-2 pr-space-sm"><button type="button" className="font-label-sm text-label-sm text-primary hover:underline">{f.evidence}</button></td>
+                      <td className="py-2 pr-space-sm"><button type="button" onClick={() => setEvidence(f)} className="inline-flex items-center gap-0.5 font-label-sm text-label-sm text-primary hover:underline"><Icon name="open_in_new" size={13} /> {f.evidence}</button></td>
                     </tr>
                   ))}
                 </tbody>
@@ -309,7 +385,7 @@ export function ComplianceRiskScoring({ module, screen }: { module: Module; scre
                   <p className="font-body-sm text-body-sm text-on-surface">A <span className="font-semibold">draft</span> enforcement case was created for officer review. Enforcement is not initiated automatically. <Link href="/app/enforcement/case" className="text-primary hover:underline">Open case workspace</Link>.</p>
                 </div>
               )}
-              <button type="button" onClick={() => setRecorded(null)} className="mt-space-sm font-label-sm text-label-sm text-primary hover:underline">Record a different disposition</button>
+              <button type="button" onClick={() => clearDisposition(selId)} className="mt-space-sm font-label-sm text-label-sm text-primary hover:underline">Reopen — record a different disposition</button>
             </Card>
           ) : (
             <Card title="Officer disposition">
@@ -329,7 +405,60 @@ export function ComplianceRiskScoring({ module, screen }: { module: Module; scre
           )}
         </div>
       </div>
+
+      {evidence && <EvidenceDrawer entity={sel} factor={evidence} onClose={() => setEvidence(null)} />}
     </ScreenChrome>
+  );
+}
+
+function EvidenceDrawer({ entity, factor, onClose }: { entity: RiskEntity; factor: RiskFactor; onClose: () => void }) {
+  const ev = evidenceFor(entity, factor);
+  return (
+    <div className="fixed inset-0 z-50 flex justify-end" role="dialog" aria-modal="true">
+      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
+      <div className="relative w-full max-w-lg bg-surface-card shadow-2xl h-full overflow-y-auto app-scroll">
+        <div className="sticky top-0 bg-surface-card border-b border-border-subtle p-space-md flex items-start justify-between gap-space-sm">
+          <div>
+            <div className="font-label-sm text-label-sm text-on-surface-variant">{ev.kind}</div>
+            <h3 className="font-title-lg text-title-lg text-on-surface">{factor.label}</h3>
+            <p className="font-label-sm text-label-sm text-on-surface-variant mt-0.5">{entity.name} · {entity.id} · {EV_PERIOD}</p>
+          </div>
+          <button type="button" onClick={onClose} className="w-8 h-8 rounded-lg hover:bg-surface-container flex items-center justify-center shrink-0"><Icon name="close" size={18} /></button>
+        </div>
+        <div className="p-space-md space-y-space-md">
+          <div className="grid grid-cols-3 gap-space-sm">
+            <MiniKV k="Observed" v={factor.observed} />
+            <MiniKV k="Impact" v={factor.direction === "up" ? "Increases score" : "Reduces score"} />
+            <MiniKV k="Contribution" v={`${factor.direction === "up" ? "+" : "−"}${factor.contribution}`} />
+          </div>
+          <div className="flex items-start gap-space-sm bg-surface-container-low rounded-lg p-space-sm">
+            <Icon name="info" size={16} className="text-primary shrink-0 mt-0.5" />
+            <p className="font-body-sm text-body-sm text-on-surface-variant">{ev.note}</p>
+          </div>
+          {ev.rows.length > 0 ? (
+            <div className="overflow-x-auto app-scroll rounded-lg border border-border-subtle">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-surface-container-low">
+                    {ev.columns.map((h) => <th key={h} className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide py-2 px-space-sm whitespace-nowrap">{h}</th>)}
+                  </tr>
+                </thead>
+                <tbody>
+                  {ev.rows.map((r, i) => (
+                    <tr key={i} className="border-t border-border-subtle/60">
+                      {r.map((cell, j) => <td key={j} className={`py-2 px-space-sm font-body-sm text-body-sm whitespace-nowrap ${j === 0 ? "font-mono text-on-surface" : "text-on-surface-variant"} ${/late|below|shortfall|mismatch|duplicate|revoked|not on ledger/i.test(cell) ? "text-error" : ""} ${/on time|settled|closed/i.test(cell) ? "text-success" : ""}`}>{cell}</td>)}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="text-center py-space-lg text-on-surface-variant"><Icon name="inventory_2" size={28} /><p className="font-body-sm text-body-sm mt-1">{ev.note}</p></div>
+          )}
+          <p className="font-label-sm text-label-sm text-on-surface-variant flex items-center gap-1"><Icon name="shield" size={13} /> Evidence is advisory context for officer review. It is not a confirmed violation and does not change the entity’s status.</p>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -489,7 +618,7 @@ const DOC_FIELDS: ExtractedField[] = [
   { field: "Test report date", entered: "01 Sep 2026", extracted: "01 Sep 2026", ocr: 95, confidence: 94, page: 3 },
 ];
 
-const DOC_META = { filename: "TEST-REPORT-FM15TC5.pdf", version: "v1 (uploaded)", sha256: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" };
+const DOC_META = { filename: "TEST-REPORT-FM15TC5.pdf", version: "v1 (uploaded)", sha256: "5b2d1f8a3c94e07b6d15aef2839c40b71e6a5d9c2f83b04e7a1c6d59f2b83a10", simulated: true };
 type Dispo = "accept" | "correct" | "clarify";
 
 export function DocumentIntelligence({ module, screen }: { module: Module; screen: Screen }) {
@@ -559,7 +688,7 @@ export function DocumentIntelligence({ module, screen }: { module: Module; scree
           </div>
           <div className="mt-space-sm space-y-1">
             <div className="flex items-start justify-between gap-space-sm"><span className="font-label-sm text-label-sm text-on-surface-variant">Document version</span><span className="font-label-md text-label-md text-on-surface">{DOC_META.version}</span></div>
-            <div><div className="font-label-sm text-label-sm text-on-surface-variant">SHA-256</div><div className="font-mono text-label-sm break-all text-on-surface-variant">{DOC_META.sha256}</div></div>
+            <div><div className="font-label-sm text-label-sm text-on-surface-variant">SHA-256 <span className="text-solar-gold-dark">· simulated fixture</span></div><div className="font-mono text-label-sm break-all text-on-surface-variant">{DOC_META.sha256}</div></div>
           </div>
         </Card>
 
@@ -639,11 +768,14 @@ export function HelpdeskAssistant({ module, screen }: { module: Module; screen: 
   const [reply, setReply] = useState(
     "You can verify a BEE star label by scanning the QR code on the appliance, or by entering the registration number at bee-portal /verify. A genuine label returns the brand, model and star rating."
   );
+  const model = AI_MODELS["assist-rag"];
   const [simLow, setSimLow] = useState(false);
   const [preview, setPreview] = useState(false);
   const [sent, setSent] = useState(false);
+  const [liveMode, setLiveMode] = useState(model.live);  // Shadow model → sending disabled by default
   const confidence = simLow ? 58 : 82;
   const lowConf = confidence < THRESHOLD;
+  const canSend = liveMode;
 
   const transcript = [
     { who: "user", text: "How do I check if a star label on my new AC is genuine?" },
@@ -652,8 +784,17 @@ export function HelpdeskAssistant({ module, screen }: { module: Module; screen: 
   ];
 
   return (
-    <ScreenChrome module={module} screen={screen} subtitle="Conversation + routing assist · model assist-rag v1.4">
+    <ScreenChrome module={module} screen={screen} subtitle={`Conversation + routing assist · ${modelLabel(model)} · ${model.state}`}>
       <AIDisclaimer />
+      {!liveMode && (
+        <div className="flex flex-wrap items-center gap-space-sm bg-navy-subtle border border-navy-dark/20 rounded-xl p-space-sm" role="note">
+          <Icon name="science" size={18} className="text-navy-dark shrink-0" />
+          <p className="font-body-sm text-body-sm text-on-surface flex-1"><span className="font-semibold">Shadow model ({modelLabel(model)}).</span> Evaluation and feedback only — the assistant cannot send a response to a user until it is promoted to Live by governance.</p>
+          <label className="flex items-center gap-1.5 font-label-sm text-label-sm text-navy-dark cursor-pointer whitespace-nowrap">
+            <input type="checkbox" checked={liveMode} onChange={(e) => setLiveMode(e.target.checked)} className="accent-primary" /> Authorise live (demo)
+          </label>
+        </div>
+      )}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-space-md">
         {/* Transcript */}
         <div className="lg:col-span-3">
@@ -706,11 +847,12 @@ export function HelpdeskAssistant({ module, screen }: { module: Module; screen: 
                   </div>
                   <textarea value={reply} onChange={(e) => setReply(e.target.value)} rows={4} className="w-full px-space-sm py-2 rounded-lg bg-surface-container-low font-body-sm text-body-sm outline-none resize-none" />
                   <div className="flex flex-wrap gap-space-sm mt-space-sm">
-                    <button type="button" onClick={() => setPreview(true)} className="flex items-center gap-1.5 bg-primary text-on-primary font-label-md text-label-md font-semibold py-2 px-space-md rounded-lg hover:bg-forest-dark"><Icon name="send" size={16} /> Accept &amp; send</button>
+                    <button type="button" disabled={!canSend} onClick={() => canSend && setPreview(true)} title={canSend ? "" : "Shadow model — cannot send to a user"} className={`flex items-center gap-1.5 font-label-md text-label-md font-semibold py-2 px-space-md rounded-lg ${canSend ? "bg-primary text-on-primary hover:bg-forest-dark" : "bg-surface-container text-on-surface-variant cursor-not-allowed"}`}><Icon name={canSend ? "send" : "lock"} size={16} /> Accept &amp; send</button>
                     <button type="button" className="flex items-center gap-1.5 bg-surface-container text-on-surface font-label-md text-label-md py-2 px-space-md rounded-lg hover:bg-forest-light"><Icon name="edit" size={16} /> Edit</button>
                     <button type="button" className="flex items-center gap-1.5 bg-surface-container text-on-surface font-label-md text-label-md py-2 px-space-md rounded-lg hover:bg-error-container"><Icon name="block" size={16} /> Reject</button>
                     <button type="button" className="flex items-center gap-1.5 bg-solar-gold-light text-solar-gold-dark font-label-md text-label-md font-semibold py-2 px-space-md rounded-lg ml-auto hover:bg-solar-gold hover:text-on-primary"><Icon name="support_agent" size={16} /> Escalate to human</button>
                   </div>
+                  {!canSend && <p className="font-label-sm text-label-sm text-on-surface-variant mt-1">In Shadow mode the draft can be evaluated and edited, but not sent. Escalate to a human agent instead.</p>}
                 </>
               )}
             </div>
@@ -860,24 +1002,21 @@ export function StarRatingTrends({ module, screen }: { module: Module; screen: S
  * 6) AI MODEL GOVERNANCE — restricted registry & controls.
  * ================================================================== */
 
-interface GovModel {
-  name: string; version: string; trained: string; status: "Approved" | "Shadow" | "Retired";
-  accuracy: number; drift: "Low" | "Rising" | "High"; retrained: string; owner: string; override: number;
-}
+/* Registry is the SAME shared fixture the insight screens and landing cards
+ * read from — one source of truth for state, version, accuracy and drift. */
+const GOV_MODELS = Object.values(AI_MODELS);
 
-const GOV_MODELS: GovModel[] = [
-  { name: "risk-rank", version: "v2.3", trained: "Apr 2024 – Mar 2026", status: "Approved", accuracy: 91, drift: "Low", retrained: "12 Aug 2026", owner: "Enforcement Analytics", override: 14 },
-  { name: "anomaly-iforest", version: "v1.8", trained: "Jan 2025 – Jun 2026", status: "Approved", accuracy: 86, drift: "Rising", retrained: "01 Jul 2026", owner: "Production Cell", override: 23 },
-  { name: "doc-extract", version: "v3.1", trained: "Jul 2023 – Feb 2026", status: "Approved", accuracy: 94, drift: "Low", retrained: "20 Jun 2026", owner: "Registrations IT", override: 9 },
-  { name: "assist-rag", version: "v1.4", trained: "KB snapshot Jun 2026", status: "Shadow", accuracy: 79, drift: "High", retrained: "—", owner: "Helpdesk Digital", override: 31 },
-];
+/* Only model administrators may request maker-checker operations. Auditors
+ * and other authorised viewers get read-only access to the governance view. */
+const GOV_ACTORS = new Set(["admin", "director"]);
 
-const DRIFT_TONE: Record<GovModel["drift"], string> = { Low: OK, Rising: WARN, High: BAD };
-const GOV_STATUS_TONE: Record<GovModel["status"], string> = { Approved: OK, Shadow: WARN, Retired: "bg-surface-container text-on-surface-variant" };
+const DRIFT_TONE: Record<AIModelState["drift"], string> = { Low: OK, Rising: WARN, High: BAD };
+const GOV_STATUS_TONE: Record<AIModelState["state"], string> = { Approved: OK, Shadow: WARN, Retired: "bg-surface-container text-on-surface-variant" };
 
 export function AIModelGovernance({ module, screen }: { module: Module; screen: Screen }) {
   const { role } = useRole();
   const maker = roleByKey(role);
+  const canAct = GOV_ACTORS.has(role);
   const [selName, setSelName] = useState(GOV_MODELS[0].name);
   const [action, setAction] = useState("");
   const [reason, setReason] = useState("");
@@ -885,7 +1024,7 @@ export function AIModelGovernance({ module, screen }: { module: Module; screen: 
   const sel = GOV_MODELS.find((m) => m.name === selName)!;
 
   function submitMaker() {
-    if (!action || !reason.trim()) return;
+    if (!canAct || !action || !reason.trim()) return;
     setPending({ action, reason: reason.trim(), maker: maker.name });
     setAction(""); setReason("");
   }
@@ -913,7 +1052,7 @@ export function AIModelGovernance({ module, screen }: { module: Module; screen: 
                 <tr key={m.name} className={`border-b border-border-subtle/60 cursor-pointer hover:bg-surface-container-low ${m.name === selName ? "bg-primary-container/25" : ""}`} onClick={() => setSelName(m.name)}>
                   <td className="py-2.5 pr-space-md font-body-sm text-body-sm text-on-surface font-semibold whitespace-nowrap">{m.name}</td>
                   <td className="py-2.5 pr-space-md font-body-sm text-body-sm text-on-surface-variant">{m.version}</td>
-                  <td className="py-2.5 pr-space-md"><Status label={m.status} tone={GOV_STATUS_TONE[m.status]} /></td>
+                  <td className="py-2.5 pr-space-md"><Status label={m.state} tone={GOV_STATUS_TONE[m.state]} /></td>
                   <td className="py-2.5 pr-space-md font-body-sm text-body-sm text-on-surface">{m.accuracy}%</td>
                   <td className="py-2.5 pr-space-md"><Status label={m.drift} tone={DRIFT_TONE[m.drift]} /></td>
                   <td className="py-2.5 pr-space-md font-body-sm text-body-sm text-on-surface-variant whitespace-nowrap">{m.retrained}</td>
@@ -927,11 +1066,11 @@ export function AIModelGovernance({ module, screen }: { module: Module; screen: 
       </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-space-md">
-        <Card title={`${sel.name} ${sel.version}`} action={<Status label={sel.status} tone={GOV_STATUS_TONE[sel.status]} />}>
+        <Card title={`${sel.name} ${sel.version}`} action={<Status label={sel.state} tone={GOV_STATUS_TONE[sel.state]} />}>
           <div className="space-y-space-sm">
             <Row label="Business owner" value={sel.owner} />
             <Row label="Technical owner" value="BEE Data Platform team" />
-            <Row label="Deployment status" value={sel.status === "Approved" ? "Production" : sel.status === "Shadow" ? "Shadow (challenger)" : "Retired"} />
+            <Row label="Deployment status" value={sel.state === "Approved" ? "Production" : sel.state === "Shadow" ? "Shadow (challenger)" : "Retired"} />
             <Row label="Training-data period" value={sel.trained} />
             <Row label="Dataset / lineage" value={`ds-${sel.name}-2026Q2 · lineage tracked`} />
             <Row label="Last validation" value={sel.retrained === "—" ? "Not validated" : sel.retrained} />
@@ -963,8 +1102,16 @@ export function AIModelGovernance({ module, screen }: { module: Module; screen: 
             </div>
           </Card>
 
-          <Card title="Controls — maker / checker">
-            {pending ? (
+          <Card title="Controls — maker / checker" action={canAct ? undefined : <Status label="Read-only" tone="bg-surface-container text-on-surface-variant" />}>
+            {!canAct ? (
+              <div className="flex items-start gap-space-sm bg-surface-container-low rounded-lg p-space-md">
+                <Icon name="visibility" size={18} className="text-on-surface-variant shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-body-sm text-body-sm text-on-surface"><span className="font-semibold">You are viewing as {maker.name}.</span> This role has read-only access to model governance.</p>
+                  <p className="font-label-sm text-label-sm text-on-surface-variant mt-1">Pause, roll back and deploy operations are limited to model administrators. Auditors and other authorised viewers can review the registry, drift and history but cannot request changes.</p>
+                </div>
+              </div>
+            ) : pending ? (
               <div className="bg-solar-gold-light/50 border border-solar-gold/40 rounded-lg p-space-md">
                 <div className="flex items-center gap-space-sm mb-1"><Icon name="hourglass_top" size={18} className="text-solar-gold-dark" /><span className="font-title-sm text-title-sm text-on-surface font-semibold">Awaiting checker approval</span></div>
                 <div className="space-y-1 mt-space-sm">

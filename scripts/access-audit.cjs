@@ -72,8 +72,28 @@ check("Default-deny holds for unauthorised role/path pairs", () => {
     ["manufacturer", "/app/audit/integration-correlation"],
     ["laboratory", "/app/finance/security-deposit-ledger"],
     ["director", "/app/administration/fee-rules"],
+    // Partners must never reach BEE-internal work inside a shared category.
+    ["manufacturer", "/app/finance/finance-queue"],
+    ["manufacturer", "/app/finance/security-deposit-ledger"],
+    ["manufacturer", "/app/helpdesk/workspace"],
+    ["manufacturer", "/app/workflow/my-approvals"],
+    ["manufacturer", "/app/production/reconciliation"],
+    ["manufacturer", "/app/production/compliance-exceptions"],
+    ["agency", "/app/helpdesk/workspace"],
+    ["agency", "/app/production/reconciliation"],
+    ["iame", "/app/model-label/new-model-application"],
+    ["iame", "/app/helpdesk/workspace"],
+    ["laboratory", "/app/enforcement/show-cause"],
+    ["sda", "/app/mis-ai/executive-mis"],
   ];
   deny.forEach(([role, path]) => { if (canRoleAccessPath(role, path)) fail(`${role} should NOT reach ${path}`); });
+});
+
+check("External partners see no internal-only menu item", () => {
+  const external = ROLES.filter((r) => r.kind === "external").map((r) => r.key);
+  external.forEach((r) => categoriesForRole(r).forEach((c) => c.items.forEach((it) => {
+    if (!it.ext || !it.ext.includes(r)) fail(`${r} sees internal-only item "${it.en}" (${it.href})`);
+  })));
 });
 
 check("Public verification is not in any staff sidebar", () => {

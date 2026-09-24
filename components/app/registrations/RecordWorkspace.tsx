@@ -35,7 +35,7 @@ interface Rec {
 
 const RECORDS: Rec[] = [
   {
-    id: "APP-2026-04821", type: "Model", name: "FrostMax 1.5T", org: "Nova Cool Appliances Ltd.", category: "Room ACs",
+    id: "APP-2026-05016", type: "Model", name: "FrostMax 1.5T", org: "Nova Cool Appliances Ltd.", category: "Room ACs",
     stages: ["Application", "Fee", "IAME scrutiny", "BEE scrutiny", "Approval", "Rating & label", "Active"], stageIndex: 3,
     status: "In scrutiny",
     profile: [

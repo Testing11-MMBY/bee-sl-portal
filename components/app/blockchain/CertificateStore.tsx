@@ -50,9 +50,12 @@ const now = () => new Date().toISOString();
 
 export const INITIAL: CertState = {
   issuance: "ACTIVE",
+  // Issuance-sequence stages align with the v1 issuance ledger commit
+  // (04 Sep 2026) so the hash/submit/confirm/activate times never disagree
+  // with the on-chain timestamp shown beside them.
   stages: {
-    generatedAt: "2026-09-20T06:41:40Z", hashedAt: "2026-09-20T06:41:50Z",
-    submittedAt: "2026-09-20T06:41:58Z", confirmedAt: "2026-09-20T06:42:11Z", activatedAt: "2026-09-20T06:42:20Z",
+    generatedAt: "2026-09-04T06:41:40Z", hashedAt: "2026-09-04T06:41:50Z",
+    submittedAt: "2026-09-04T06:41:58Z", confirmedAt: "2026-09-04T06:42:11Z", activatedAt: "2026-09-04T06:42:20Z",
   },
   error: null,
   // Default seed is the full lifecycle: v1 Issued → v2 Amended → v3 Revoked.

@@ -35,7 +35,10 @@ export default function AIInsightsLanding() {
                 <span className="w-10 h-10 rounded-lg bg-primary-container/50 text-primary flex items-center justify-center shrink-0"><Icon name={u.icon} size={22} fill /></span>
                 <div className="min-w-0">
                   <h3 className="font-title-lg text-title-lg text-on-surface truncate">{u.title}</h3>
-                  <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full font-label-sm text-label-sm font-semibold ${h.tone}`}><Icon name={h.icon} size={12} /> {h.label}</span>
+                  <div className="flex items-center gap-1 flex-wrap">
+                    <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full font-label-sm text-label-sm font-semibold ${h.tone}`}><Icon name={h.icon} size={12} /> {h.label}</span>
+                    <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full font-label-sm text-label-sm font-semibold ${u.state === "Shadow" ? "bg-solar-gold-light text-solar-gold-dark" : "bg-success-light text-success"}`}>{u.state === "Shadow" ? "Shadow" : "Live"}</span>
+                  </div>
                 </div>
               </div>
               <p className="font-body-sm text-body-sm text-on-surface-variant mb-space-sm flex-1">{u.purpose}</p>
@@ -68,7 +71,7 @@ export default function AIInsightsLanding() {
           </div>
           <p className="font-body-sm text-body-sm text-on-surface-variant mb-space-sm flex-1">Versions, drift, retraining, override rates, rollback and fairness evidence — separate from business insights.</p>
           <div className="flex items-center justify-between border-t border-navy-dark/15 pt-space-sm">
-            <span className="font-label-sm text-label-sm text-on-surface-variant flex items-center gap-1"><Icon name="deployed_code" size={12} /> 4 models registered</span>
+            <span className="font-label-sm text-label-sm text-on-surface-variant flex items-center gap-1"><Icon name="deployed_code" size={12} /> 5 models registered</span>
             <span className="flex items-center gap-1 font-label-md text-label-md text-navy-dark font-semibold group-hover:gap-2 transition-all">Open <Icon name="arrow_forward" size={16} /></span>
           </div>
         </Link>
