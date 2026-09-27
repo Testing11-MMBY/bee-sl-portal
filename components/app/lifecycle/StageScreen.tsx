@@ -6,6 +6,7 @@ import { Icon } from "@/components/ui/Icon";
 import { Stars } from "@/components/ui/Stars";
 import { Card, ScreenChrome, Status, OK, WARN } from "@/components/app/ScreenScaffold";
 import { useLifecycle } from "@/components/app/LifecycleStore";
+import { useRole } from "@/components/app/RoleContext";
 import { Module, Screen } from "@/lib/screens";
 import { ModelApplication, Stage, STAGE_META, computeStars } from "@/lib/mock/lifecycle";
 import { ApplicationSummary, StageBadge, StageStepper, Timeline, useActor } from "./shared";
@@ -33,9 +34,14 @@ const VARIANT_COPY: Record<StageVariant, { subtitle: string; primary: string; ic
 export function StageScreen({ module, screen, variant, bare = false }: { module: Module; screen: Screen; variant: StageVariant; bare?: boolean }) {
   const stage = VARIANT_STAGE[variant];
   const { apps, appsAtStage, byId, payFee, advance, returnApp, reject, setRating, generateLabel } = useLifecycle();
+  const { role } = useRole();
   const actor = useActor();
   const params = useSearchParams();
   const idParam = params.get("id");
+
+  // Fee receipt is a BEE Finance action — never available to the payer or any
+  // non-Finance role. Guards the button AND the action itself (the "API").
+  const canConfirmFee = variant !== "fee" || role === "finance";
 
   const queue = appsAtStage(stage);
   const selected = byId(idParam) ?? queue[0] ?? apps[0];
@@ -44,7 +50,7 @@ export function StageScreen({ module, screen, variant, bare = false }: { module:
   const [note, setNote] = useState("");
 
   function doPrimary(a: ModelApplication) {
-    if (variant === "fee") return payFee(a.id, actor);
+    if (variant === "fee") { if (!canConfirmFee) return; return payFee(a.id, actor); }
     if (variant === "rating") return setRating(a.id, actor);
     if (variant === "label") return generateLabel(a.id, actor);
     const msg =
@@ -125,7 +131,12 @@ export function StageScreen({ module, screen, variant, bare = false }: { module:
 
               {/* Action panel */}
               <Card title="Action">
-                {atStage ? (
+                {variant === "fee" && !canConfirmFee ? (
+                  <div className="flex items-start gap-space-sm bg-surface-container-low rounded-lg p-space-sm">
+                    <Icon name="lock" size={18} className="text-on-surface-variant shrink-0 mt-0.5" />
+                    <p className="font-body-sm text-body-sm text-on-surface">Confirming receipt of a fee is reserved for the <span className="font-semibold">BEE Finance</span> workflow. This role can view fee and reconciliation status but cannot confirm settlement.</p>
+                  </div>
+                ) : atStage ? (
                   <>
                     {(variant === "iame" || variant === "bee" || variant === "approval") && (
                       <>

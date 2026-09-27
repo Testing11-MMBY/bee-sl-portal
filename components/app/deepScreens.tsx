@@ -4,6 +4,7 @@ import { Module, Screen } from "@/lib/screens";
 import { ModelDashboard } from "./lifecycle/ModelDashboard";
 import { NewModelApplication } from "./lifecycle/NewModelApplication";
 import { StageScreen, StageVariant } from "./lifecycle/StageScreen";
+import { ModelPaymentScreen } from "./lifecycle/PaymentScreens";
 import { ApplicationDetailScreen, DetailVariant, FamilyModels } from "./lifecycle/ModelDetailScreens";
 import { ApplicationReview, EscalationDashboard, WorkflowHistory, WorkflowInbox } from "./lifecycle/WorkflowScreens";
 import {
@@ -38,7 +39,7 @@ export const DEEP_SCREENS: Record<string, DeepComponent> = {
   // Model & Label — full lifecycle
   "model-label/model-dashboard": ModelDashboard,
   "model-label/new-model-application": NewModelApplication,
-  "model-label/model-payment": stage("fee"),
+  "model-label/model-payment": ModelPaymentScreen,
   "model-label/iame-scrutiny": stage("iame"),
   "model-label/bee-scrutiny": stage("bee"),
   "model-label/director-approval": stage("approval"),
